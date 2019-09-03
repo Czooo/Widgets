@@ -280,12 +280,12 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 		this.mNestedRefreshHelper.setOnRefreshListener(listener);
 	}
 
-	public void addOnScrollListener(@NonNull NestedScrollingHelper.OnScrollListener listener) {
-		this.mNestedRefreshHelper.getNestedScrollingHelper().addOnScrollListener(listener);
+	public void addOnScrollListener(@NonNull OnScrollListener listener) {
+		this.mNestedRefreshHelper.addOnScrollListener(listener);
 	}
 
-	public void removeOnScrollListener(@NonNull NestedScrollingHelper.OnScrollListener listener) {
-		this.mNestedRefreshHelper.getNestedScrollingHelper().removeOnScrollListener(listener);
+	public void removeOnScrollListener(@NonNull OnScrollListener listener) {
+		this.mNestedRefreshHelper.removeOnScrollListener(listener);
 	}
 
 	public boolean isRefreshing() {
@@ -294,6 +294,10 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 
 	public int getOrientation() {
 		return this.mNestedRefreshHelper.getOrientation();
+	}
+
+	public float getFrictionRatio() {
+		return this.mNestedRefreshHelper.getFrictionRatio();
 	}
 
 	@NonNull
@@ -316,6 +320,11 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 		return this.mNestedRefreshHelper.getNestedScrollingHelper();
 	}
 
+	public interface OnDragViewOwner {
+
+		View getDragView(@NonNull RefreshLayout refreshLayout);
+	}
+
 	public interface OnChildScrollCallback {
 
 		boolean canChildScroll(@NonNull RefreshLayout refreshLayout, int direction);
@@ -326,9 +335,9 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 		void onRefreshing(@NonNull RefreshLayout refreshLayout, @NonNull RefreshMode mode);
 	}
 
-	public interface OnDragViewOwner {
+	public interface OnScrollListener {
 
-		View getDragView(@NonNull RefreshLayout refreshLayout);
+		void onScrolled(@NonNull RefreshLayout refreshLayout, int dx, int dy);
 	}
 
 	public interface LoadView {
@@ -345,8 +354,6 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 		void onRefreshing(@NonNull RefreshLayout refreshLayout);
 
 		void onRefreshed(@NonNull RefreshLayout refreshLayout);
-
-		void onDestoryView(@NonNull RefreshLayout refreshLayout, @NonNull ViewGroup container);
 	}
 
 	public static abstract class SimpleLoadView implements LoadView {
@@ -365,11 +372,6 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 				return container.getMeasuredHeight();
 			}
 			return container.getMeasuredWidth();
-		}
-
-		@CallSuper
-		@Override
-		public void onDestoryView(@NonNull RefreshLayout refreshLayout, @NonNull ViewGroup container) {
 		}
 
 		@NonNull

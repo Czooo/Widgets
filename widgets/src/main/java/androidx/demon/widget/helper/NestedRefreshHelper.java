@@ -7,6 +7,7 @@ import android.widget.RelativeLayout;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.ArrayList;
 
 import androidx.annotation.FloatRange;
 import androidx.annotation.IntDef;
@@ -43,6 +44,7 @@ public class NestedRefreshHelper implements NestedScrollingHelper.Callback {
 	private RefreshLayout.OnRefreshListener mOnRefreshListener;
 	private RefreshLayout.OnDragViewOwner mOnDragViewOwner;
 	private RefreshLayout.OnChildScrollCallback mOnChildScrollCallback;
+	private ArrayList<RefreshLayout.OnScrollListener> mOnScrollListeners;
 
 	private boolean mIsDragStart = true;
 	private boolean mIsDragEnd = true;
@@ -130,6 +132,12 @@ public class NestedRefreshHelper implements NestedScrollingHelper.Callback {
 		} else {
 			final int direction = helper.getPreScrollDirection(dy);
 			this.dispatchOnRefreshPull(direction, (int) (nowScrollOffsetY + NestedHelper.getDirectionDifference(direction)));
+		}
+
+		if (this.mOnScrollListeners != null) {
+			for (RefreshLayout.OnScrollListener listener : this.mOnScrollListeners) {
+				listener.onScrolled(this.mAnchorView, consumed[0], consumed[1]);
+			}
 		}
 	}
 
@@ -282,6 +290,10 @@ public class NestedRefreshHelper implements NestedScrollingHelper.Callback {
 		}
 	}
 
+	public void setOnChildScrollCallback(@NonNull RefreshLayout.OnChildScrollCallback callback) {
+		this.mOnChildScrollCallback = callback;
+	}
+
 	public void setOnDragViewOwner(@NonNull RefreshLayout.OnDragViewOwner owner) {
 		this.mOnDragViewOwner = owner;
 	}
@@ -290,8 +302,17 @@ public class NestedRefreshHelper implements NestedScrollingHelper.Callback {
 		this.mOnRefreshListener = listener;
 	}
 
-	public void setOnChildScrollCallback(@NonNull RefreshLayout.OnChildScrollCallback callback) {
-		this.mOnChildScrollCallback = callback;
+	public void addOnScrollListener(@NonNull RefreshLayout.OnScrollListener listener) {
+		if (this.mOnScrollListeners == null) {
+			this.mOnScrollListeners = new ArrayList<>();
+		}
+		this.mOnScrollListeners.add(listener);
+	}
+
+	public void removeOnScrollListener(@NonNull RefreshLayout.OnScrollListener listener) {
+		if (this.mOnScrollListeners != null) {
+			this.mOnScrollListeners.remove(listener);
+		}
 	}
 
 	public static final int SCROLL_STYLE_FOLLOWED = 0;
@@ -309,7 +330,6 @@ public class NestedRefreshHelper implements NestedScrollingHelper.Callback {
 			return;
 		}
 		if (this.mHeaderLoadView != null) {
-			this.mHeaderLoadView.onDestoryView(this.mAnchorView, this.mHeaderContainer);
 			this.mHeaderContainer.removeAllViews();
 		}
 		if (this.mHeaderContainer == null) {
@@ -334,7 +354,6 @@ public class NestedRefreshHelper implements NestedScrollingHelper.Callback {
 			return;
 		}
 		if (this.mFooterLoadView != null) {
-			this.mFooterLoadView.onDestoryView(this.mAnchorView, this.mFooterContainer);
 			this.mFooterContainer.removeAllViews();
 		}
 		if (this.mFooterContainer == null) {
@@ -379,6 +398,10 @@ public class NestedRefreshHelper implements NestedScrollingHelper.Callback {
 	@OrientationMode
 	public int getOrientation() {
 		return this.mOrientation;
+	}
+
+	public float getFrictionRatio() {
+		return this.mFrictionRatio;
 	}
 
 	@NonNull

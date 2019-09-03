@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.demon.widget.RefreshLayout
+    android:id="@+id/refreshLayout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:refreshMode="all"
+    tools:context=".MainActivity">
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@id/app_refresh_view_id"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/white">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="60dp"
+            android:paddingTop="60dp">
+
+            <androidx.demon.widget.BannerLayout
+                android:id="@+id/bannerLayout"
+                android:layout_width="match_parent"
+                android:layout_height="200dp">
+
+                <androidx.demon.widget.IndicatorView
+                    android:id="@+id/indicatorView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginBottom="8dp"/>
+            </androidx.demon.widget.BannerLayout>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/viewPagerCompat"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ViewPagerCompat"
+                android:textAllCaps="false"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/fragmentPagerAdapter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="FragmentPagerAdapter"
+                android:textAllCaps="false"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/joinRefreshLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="RefreshLayout"
+                android:textAllCaps="false"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/joinNestedRefreshLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="NestedRefreshLayout"
+                android:textAllCaps="false"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/joinNineGridView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="NineGridView"
+                android:textAllCaps="false"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/joinSwipeSideLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SwipeSideLayout"
+                android:textAllCaps="false"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/joinFlowLabelView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="FlowLabelView"
+                android:textAllCaps="false"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/stickLayoutManager"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="StickLayoutManager"
+                android:textAllCaps="false"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:background="@android:color/holo_blue_dark"
+                android:gravity="center"
+                android:text="Hello World!"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:background="@color/colorPrimary"
+                android:gravity="center"
+                android:text="Hello World!"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:background="@android:color/holo_blue_dark"
+                android:gravity="center"
+                android:text="Hello World!"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:background="@android:color/darker_gray"
+                android:gravity="center"
+                android:text="Hello World!"/>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignTop="@id/app_refresh_view_id"
+        android:background="@color/colorAccent"
+        app:scrollFlag="start"
+        tools:ignore="MissingPrefix"/>
+
+    <View
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_centerVertical="true"
+        android:background="@color/colorAccent"
+        app:scrollFlag="all"
+        tools:ignore="MissingPrefix"/>
+
+    <View
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="100dp"
+        android:background="@color/colorAccent"
+        app:scrollFlag="none"
+        tools:ignore="MissingPrefix"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignBottom="@id/app_refresh_view_id"
+        android:background="@color/colorAccent"
+        app:scrollFlag="end"
+        tools:ignore="MissingPrefix"/>
+</androidx.demon.widget.RefreshLayout>

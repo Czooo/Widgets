@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="ViewPagerCompat">
+        <attr name="android:orientation"/>
+        <attr name="pageLimit" format="integer|reference"/>
+        <attr name="scrollingDuration" format="integer|reference"/>
+        <attr name="scrollingInAllowUser" format="boolean"/>
+        <attr name="scrollingDisabled" format="boolean"/>
+        <attr name="scrollingLoop" format="boolean"/>
+    </declare-styleable>
+    <declare-styleable name="BannerLayout">
+        <attr name="android:orientation"/>
+        <attr name="bannerScrollingDuration" format="integer"/>
+        <attr name="bannerAutoPlayDelayMillis" format="integer"/>
+        <attr name="bannerOffscreenPageLimit" format="integer"/>
+        <attr name="bannerPageMargin" format="dimension|reference"/>
+        <attr name="bannerShouldAutoPlaying" format="boolean"/>
+        <attr name="bannerAllowUserScrollable" format="boolean"/>
+        <attr name="bannerScrollDirection" format="enum">
+            <enum name="scrollStart" value="0"/>
+            <enum name="scrollEnd" value="1"/>
+        </attr>
+    </declare-styleable>
+    <declare-styleable name="IndicatorView">
+        <attr name="indicatorWeight" format="float"/>
+        <attr name="indicatorMargin" format="dimension|reference"/>
+        <attr name="defIndicatorWidth" format="dimension|reference"/>
+        <attr name="defIndicatorHeight" format="dimension|reference"/>
+        <attr name="defIndicatorDrawable" format="reference"/>
+        <attr name="defIndicatorSelectedDrawable" format="reference"/>
+        <attr name="defIndicatorUnSelectedDrawable" format="reference"/>
+        <attr name="defIndicatorScaleType" format="enum">
+            <enum name="center" value="0"/>
+            <enum name="center_crop" value="1"/>
+            <enum name="center_inside" value="2"/>
+            <enum name="fit_center" value="3"/>
+            <enum name="fit_start" value="4"/>
+            <enum name="fit_end" value="5"/>
+            <enum name="fit_xy" value="6"/>
+            <enum name="matrix" value="7"/>
+        </attr>
+    </declare-styleable>
+    <declare-styleable name="RefreshLayout">
+        <attr name="android:orientation"/>
+        <attr name="refreshMode" format="enum">
+            <enum name="none" value="0"/>
+            <enum name="start" value="-1"/>
+            <enum name="end" value="1"/>
+            <enum name="all" value="2"/>
+        </attr>
+    </declare-styleable>
+    <declare-styleable name="RefreshLayout_Layout">
+        <attr name="scrollFlag" format="enum">
+            <enum name="none" value="0"/>
+            <enum name="start" value="-1"/>
+            <enum name="end" value="1"/>
+            <enum name="all" value="2"/>
+        </attr>
+    </declare-styleable>
+    <declare-styleable name="SwipeSideLayout">
+        <attr name="dampSpringBackSize" format="dimension|reference"/>
+    </declare-styleable>
+    <declare-styleable name="SwipeSideLayout_Layout">
+        <attr name="scrollLayout" format="enum">
+            <enum name="left" value="1"/>
+            <enum name="top" value="2"/>
+            <enum name="right" value="3"/>
+            <enum name="bottom" value="4"/>
+        </attr>
+    </declare-styleable>
+    <declare-styleable name="FlowLabelView">
+        <attr name="android:text"/>
+        <attr name="android:textSize"/>
+        <attr name="android:textColor"/>
+    </declare-styleable>
+</resources>

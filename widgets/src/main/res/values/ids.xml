@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="app_banner_view_id" type="id"/>
+    <item name="app_refresh_view_id" type="id"/>
+    <item name="app_refresh_header_view_id" type="id"/>
+    <item name="app_refresh_footer_view_id" type="id"/>
+</resources>

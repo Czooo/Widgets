@@ -19,7 +19,7 @@ import androidx.annotation.Nullable;
 import androidx.core.view.NestedScrollingChild;
 import androidx.core.view.NestedScrollingParent;
 import androidx.customview.view.AbsSavedState;
-import androidx.demon.widget.helper.NestedRefreshScrollingHelper;
+import androidx.demon.widget.helper.NestedRefreshHelper;
 import androidx.demon.widget.helper.NestedScrollingHelper;
 
 /**
@@ -28,13 +28,13 @@ import androidx.demon.widget.helper.NestedScrollingHelper;
  */
 public class RefreshLayout extends RelativeLayout implements NestedScrollingParent, NestedScrollingChild {
 
-	public static final int HORIZONTAL = NestedRefreshScrollingHelper.HORIZONTAL;
+	public static final int HORIZONTAL = NestedRefreshHelper.HORIZONTAL;
 
-	public static final int VERTICAL = NestedRefreshScrollingHelper.VERTICAL;
+	public static final int VERTICAL = NestedRefreshHelper.VERTICAL;
 
-	public static final int SCROLL_STYLE_FOLLOWED = NestedRefreshScrollingHelper.SCROLL_STYLE_FOLLOWED;
+	public static final int SCROLL_STYLE_FOLLOWED = NestedRefreshHelper.SCROLL_STYLE_FOLLOWED;
 
-	public static final int SCROLL_STYLE_AFTER_FOLLOWED = NestedRefreshScrollingHelper.SCROLL_STYLE_AFTER_FOLLOWED;
+	public static final int SCROLL_STYLE_AFTER_FOLLOWED = NestedRefreshHelper.SCROLL_STYLE_AFTER_FOLLOWED;
 
 	public static final int SCROLL_FLAG_NONE = 0;
 
@@ -44,7 +44,7 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 
 	public static final int SCROLL_FLAG_ALL = 2;
 
-	private final NestedRefreshScrollingHelper mNestedRefreshScrollingHelper;
+	private final NestedRefreshHelper mNestedRefreshHelper;
 
 	public RefreshLayout(@NonNull Context context) {
 		this(context, null);
@@ -65,18 +65,18 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 		final int mRefreshMode = mTypedArray.getInt(R.styleable.RefreshLayout_refreshMode, RefreshMode.REFRESH_MODE_NONE.getKey());
 		mTypedArray.recycle();
 
-		this.mNestedRefreshScrollingHelper = new NestedRefreshScrollingHelper(this);
-		this.mNestedRefreshScrollingHelper.setHeaderScrollStyleMode(SCROLL_STYLE_AFTER_FOLLOWED);
-		this.mNestedRefreshScrollingHelper.setFooterScrollStyleMode(SCROLL_STYLE_AFTER_FOLLOWED);
-		this.mNestedRefreshScrollingHelper.setRefreshMode(RefreshMode.parse(mRefreshMode));
-		this.mNestedRefreshScrollingHelper.setOrientation(mOrientation);
+		this.mNestedRefreshHelper = new NestedRefreshHelper(this);
+		this.mNestedRefreshHelper.setHeaderScrollStyleMode(SCROLL_STYLE_AFTER_FOLLOWED);
+		this.mNestedRefreshHelper.setFooterScrollStyleMode(SCROLL_STYLE_AFTER_FOLLOWED);
+		this.mNestedRefreshHelper.setRefreshMode(RefreshMode.parse(mRefreshMode));
+		this.mNestedRefreshHelper.setOrientation(mOrientation);
 	}
 
 	@Override
 	protected void onFinishInflate() {
 		super.onFinishInflate();
 		// ensure dragging view
-		this.mNestedRefreshScrollingHelper.getDragView();
+		this.mNestedRefreshHelper.getDragView();
 	}
 
 	@Override
@@ -120,7 +120,7 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 
 	@Override
 	public boolean onInterceptTouchEvent(MotionEvent event) {
-		if (this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().onInterceptTouchEvent(event)) {
+		if (this.mNestedRefreshHelper.getNestedScrollingHelper().onInterceptTouchEvent(event)) {
 			return true;
 		}
 		return super.onInterceptTouchEvent(event);
@@ -129,7 +129,7 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 	@Override
 	@SuppressLint("ClickableViewAccessibility")
 	public boolean onTouchEvent(MotionEvent event) {
-		if (this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().onTouchEvent(event)) {
+		if (this.mNestedRefreshHelper.getNestedScrollingHelper().onTouchEvent(event)) {
 			return true;
 		}
 		return super.onTouchEvent(event);
@@ -139,181 +139,181 @@ public class RefreshLayout extends RelativeLayout implements NestedScrollingPare
 
 	@Override
 	public boolean onStartNestedScroll(@NonNull View child, @NonNull View target, int nestedScrollAxes) {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().onStartNestedScroll(child, target, nestedScrollAxes);
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().onStartNestedScroll(child, target, nestedScrollAxes);
 	}
 
 	@Override
 	public void onNestedScrollAccepted(@NonNull View child, @NonNull View target, int axes) {
-		this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().onNestedScrollAccepted(child, target, axes);
+		this.mNestedRefreshHelper.getNestedScrollingHelper().onNestedScrollAccepted(child, target, axes);
 	}
 
 	@Override
 	public int getNestedScrollAxes() {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().getNestedScrollAxes();
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().getNestedScrollAxes();
 	}
 
 	@Override
 	public void onNestedPreScroll(@NonNull View target, int dx, int dy, @NonNull int[] consumed) {
-		this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().onNestedPreScroll(target, dx, dy, consumed);
+		this.mNestedRefreshHelper.getNestedScrollingHelper().onNestedPreScroll(target, dx, dy, consumed);
 	}
 
 	@Override
 	public void onNestedScroll(@NonNull final View target, final int dxConsumed, final int dyConsumed, final int dxUnconsumed, final int dyUnconsumed) {
-		this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().onNestedScroll(target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed);
+		this.mNestedRefreshHelper.getNestedScrollingHelper().onNestedScroll(target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed);
 	}
 
 	@Override
 	public void onStopNestedScroll(@NonNull View target) {
-		this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().onStopNestedScroll(target);
+		this.mNestedRefreshHelper.getNestedScrollingHelper().onStopNestedScroll(target);
 	}
 
 	// NestedScrollingChild
 
 	@Override
 	public void setNestedScrollingEnabled(boolean enabled) {
-		this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().setNestedScrollingEnabled(enabled);
+		this.mNestedRefreshHelper.getNestedScrollingHelper().setNestedScrollingEnabled(enabled);
 	}
 
 	@Override
 	public boolean isNestedScrollingEnabled() {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().isNestedScrollingEnabled();
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().isNestedScrollingEnabled();
 	}
 
 	@Override
 	public boolean startNestedScroll(int axes) {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().startNestedScroll(axes);
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().startNestedScroll(axes);
 	}
 
 	@Override
 	public void stopNestedScroll() {
-		this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().stopNestedScroll();
+		this.mNestedRefreshHelper.getNestedScrollingHelper().stopNestedScroll();
 	}
 
 	@Override
 	public boolean hasNestedScrollingParent() {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().hasNestedScrollingParent();
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().hasNestedScrollingParent();
 	}
 
 	@Override
 	public boolean dispatchNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int[] offsetInWindow) {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, offsetInWindow);
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, offsetInWindow);
 	}
 
 	@Override
 	public boolean dispatchNestedPreScroll(int dx, int dy, int[] consumed, int[] offsetInWindow) {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow);
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow);
 	}
 
 	@Override
 	public boolean onNestedPreFling(@NonNull View target, float velocityX, float velocityY) {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().onNestedPreFling(target, velocityX, velocityY);
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().onNestedPreFling(target, velocityX, velocityY);
 	}
 
 	@Override
 	public boolean onNestedFling(@NonNull View target, float velocityX, float velocityY, boolean consumed) {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().onNestedFling(target, velocityX, velocityY, consumed);
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().onNestedFling(target, velocityX, velocityY, consumed);
 	}
 
 	@Override
 	public boolean dispatchNestedFling(float velocityX, float velocityY, boolean consumed) {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().dispatchNestedFling(velocityX, velocityY, consumed);
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().dispatchNestedFling(velocityX, velocityY, consumed);
 	}
 
 	@Override
 	public boolean dispatchNestedPreFling(float velocityX, float velocityY) {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().dispatchNestedPreFling(velocityX, velocityY);
+		return this.mNestedRefreshHelper.getNestedScrollingHelper().dispatchNestedPreFling(velocityX, velocityY);
 	}
 
 	public void setDraggingToStart(boolean start) {
-		this.mNestedRefreshScrollingHelper.setDraggingToStart(start);
+		this.mNestedRefreshHelper.setDraggingToStart(start);
 	}
 
 	public void setDraggingToEnd(boolean end) {
-		this.mNestedRefreshScrollingHelper.setDraggingToEnd(end);
+		this.mNestedRefreshHelper.setDraggingToEnd(end);
 	}
 
 	public void setRefreshMode(@NonNull RefreshMode mode) {
-		this.mNestedRefreshScrollingHelper.setRefreshMode(mode);
+		this.mNestedRefreshHelper.setRefreshMode(mode);
 	}
 
 	public void setOrientation(int orientation) {
-		this.mNestedRefreshScrollingHelper.setOrientation(orientation);
+		this.mNestedRefreshHelper.setOrientation(orientation);
 	}
 
 	public void setFrictionRatio(@FloatRange(from = 0.1f, to = 1.f) float frictionRatio) {
-		this.mNestedRefreshScrollingHelper.setFrictionRatio(frictionRatio);
+		this.mNestedRefreshHelper.setFrictionRatio(frictionRatio);
 	}
 
 	public void setRefreshing(boolean refreshing) {
-		this.mNestedRefreshScrollingHelper.setRefreshing(refreshing);
+		this.mNestedRefreshHelper.setRefreshing(refreshing);
 	}
 
 	public void setRefreshing(boolean refreshing, long delayMillis) {
-		this.mNestedRefreshScrollingHelper.setRefreshing(refreshing, delayMillis);
+		this.mNestedRefreshHelper.setRefreshing(refreshing, delayMillis);
 	}
 
 	public <V extends LoadView> void setHeaderLoadView(@NonNull V loadView) {
-		this.mNestedRefreshScrollingHelper.setHeaderLoadView(loadView);
+		this.mNestedRefreshHelper.setHeaderLoadView(loadView);
 	}
 
 	public <V extends LoadView> void setFooterLoadView(@NonNull V loadView) {
-		this.mNestedRefreshScrollingHelper.setFooterLoadView(loadView);
+		this.mNestedRefreshHelper.setFooterLoadView(loadView);
 	}
 
 	public void setHeaderScrollStyleMode(int scrollStyleMode) {
-		this.mNestedRefreshScrollingHelper.setHeaderScrollStyleMode(scrollStyleMode);
+		this.mNestedRefreshHelper.setHeaderScrollStyleMode(scrollStyleMode);
 	}
 
 	public void setFooterScrollStyleMode(int scrollStyleMode) {
-		this.mNestedRefreshScrollingHelper.setFooterScrollStyleMode(scrollStyleMode);
+		this.mNestedRefreshHelper.setFooterScrollStyleMode(scrollStyleMode);
 	}
 
 	public void setOnChildScrollCallback(@NonNull OnChildScrollCallback callback) {
-		this.mNestedRefreshScrollingHelper.setOnChildScrollCallback(callback);
+		this.mNestedRefreshHelper.setOnChildScrollCallback(callback);
 	}
 
 	public void setOnDragViewOwner(@NonNull OnDragViewOwner owner) {
-		this.mNestedRefreshScrollingHelper.setOnDragViewOwner(owner);
+		this.mNestedRefreshHelper.setOnDragViewOwner(owner);
 	}
 
 	public void setOnRefreshListener(@NonNull OnRefreshListener listener) {
-		this.mNestedRefreshScrollingHelper.setOnRefreshListener(listener);
+		this.mNestedRefreshHelper.setOnRefreshListener(listener);
 	}
 
 	public void addOnScrollListener(@NonNull NestedScrollingHelper.OnScrollListener listener) {
-		this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().addOnScrollListener(listener);
+		this.mNestedRefreshHelper.getNestedScrollingHelper().addOnScrollListener(listener);
 	}
 
 	public void removeOnScrollListener(@NonNull NestedScrollingHelper.OnScrollListener listener) {
-		this.mNestedRefreshScrollingHelper.getNestedScrollingHelper().removeOnScrollListener(listener);
+		this.mNestedRefreshHelper.getNestedScrollingHelper().removeOnScrollListener(listener);
 	}
 
 	public boolean isRefreshing() {
-		return this.mNestedRefreshScrollingHelper.isRefreshing();
+		return this.mNestedRefreshHelper.isRefreshing();
 	}
 
 	public int getOrientation() {
-		return this.mNestedRefreshScrollingHelper.getOrientation();
+		return this.mNestedRefreshHelper.getOrientation();
 	}
 
 	@NonNull
 	public RefreshMode getRefreshMode() {
-		return this.mNestedRefreshScrollingHelper.getRefreshMode();
+		return this.mNestedRefreshHelper.getRefreshMode();
 	}
 
 	@NonNull
 	public LoadView getHeaderLoadView() {
-		return this.mNestedRefreshScrollingHelper.getHeaderLoadView();
+		return this.mNestedRefreshHelper.getHeaderLoadView();
 	}
 
 	@NonNull
 	public LoadView getFooterLoadView() {
-		return this.mNestedRefreshScrollingHelper.getFooterLoadView();
+		return this.mNestedRefreshHelper.getFooterLoadView();
 	}
 
 	@NonNull
 	public NestedScrollingHelper getNestedScrollingHelper() {
-		return this.mNestedRefreshScrollingHelper.getNestedScrollingHelper();
+		return this.mNestedRefreshHelper.getNestedScrollingHelper();
 	}
 
 	public interface OnChildScrollCallback {

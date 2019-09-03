@@ -58,7 +58,7 @@ public abstract class PagerAdapter<VH extends PagerAdapter.ViewHolder> extends V
 	}
 
 	@Override
-	public final void onDestoryItem(@NonNull ViewGroup container, @NonNull Object object, int position) {
+	public final void onDestroyItem(@NonNull ViewGroup container, @NonNull Object object, int position) {
 		final VH holder = (VH) object;
 		container.removeView(holder.getItemView());
 		this.onViewDetachedFromWindow(container, holder);

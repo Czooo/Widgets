@@ -2320,7 +2320,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 					this.mAdapter.onStartUpdate(this);
 					isUpdating = true;
 				}
-				this.mAdapter.onDestoryItem(this, page.object, this.adapterPositionForPosition(page.position));
+				this.mAdapter.onDestroyItem(this, page.object, this.adapterPositionForPosition(page.position));
 				needPopulate = true;
 
 				if (page.position == this.mCurrentPosition) {
@@ -2331,14 +2331,14 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				continue;
 			}
 			// normal ？
-//			if (page.position != newPosition) {
-//				if (page.position == this.mCurrentPosition) {
-//					// Our current item changed position. Follow it.
-//					nowCurrentPosition = newPosition;
-//				}
-//				page.position = newPosition;
-//				needPopulate = true;
-//			}
+			if (!this.mIsScrollingLoop && page.position != newPosition) {
+				if (page.position == this.mCurrentPosition) {
+					// Our current item changed position. Follow it.
+					nowCurrentPosition = newPosition;
+				}
+				page.position = newPosition;
+				needPopulate = true;
+			}
 		}
 		if (isUpdating) {
 			this.mAdapter.onFinishUpdate(this);
@@ -2691,7 +2691,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	Page performOnRemovePage(int index) {
 		if (index >= 0 && index < this.mPagePools.size()) {
 			final Page page = this.mPagePools.remove(index);
-			this.mAdapter.onDestoryItem(this, page.object, this.adapterPositionForPosition(page.position));
+			this.mAdapter.onDestroyItem(this, page.object, this.adapterPositionForPosition(page.position));
 			return page;
 		}
 		return null;
@@ -2927,7 +2927,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		@NonNull
 		public abstract Object onCreateItem(@NonNull ViewGroup container, int position, int pagePosition);
 
-		public abstract void onDestoryItem(@NonNull ViewGroup container, @NonNull Object object, int position);
+		public abstract void onDestroyItem(@NonNull ViewGroup container, @NonNull Object object, int position);
 
 		public abstract boolean isViewFromObject(@NonNull View view, @NonNull Object object);
 

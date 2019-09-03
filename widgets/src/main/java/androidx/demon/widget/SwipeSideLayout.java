@@ -509,7 +509,7 @@ public class SwipeSideLayout extends FrameLayout implements NestedScrollingHelpe
 			// 回弹效果
 			dampSpringBack = openState;
 		}
-		if (this.mIsOpenState) {
+		if (openState) {
 			this.openDrawer(smooth, dampSpringBack);
 		} else {
 			this.closeDrawer(smooth);

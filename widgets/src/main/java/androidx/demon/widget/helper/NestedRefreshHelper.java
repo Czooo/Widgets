@@ -23,7 +23,7 @@ import androidx.demon.widget.RefreshMode;
  * Author create by ok on 2019-07-22
  * Email : ok@163.com.
  */
-public class NestedRefreshScrollingHelper implements NestedScrollingHelper.Callback {
+public class NestedRefreshHelper implements NestedScrollingHelper.Callback {
 
 	public static final int HORIZONTAL = 0;
 
@@ -50,7 +50,7 @@ public class NestedRefreshScrollingHelper implements NestedScrollingHelper.Callb
 	@OrientationMode
 	private int mOrientation = VERTICAL;
 
-	public NestedRefreshScrollingHelper(@NonNull RefreshLayout anchorView) {
+	public NestedRefreshHelper(@NonNull RefreshLayout anchorView) {
 		this.mNestedScrollingHelper = new NestedScrollingHelperImpl(anchorView, this);
 		this.mNestedScrollingHelper.setScrollingDuration(800);
 		this.mAnchorView = anchorView;

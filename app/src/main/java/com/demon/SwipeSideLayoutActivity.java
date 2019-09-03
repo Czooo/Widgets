@@ -105,6 +105,8 @@ public class SwipeSideLayoutActivity extends AppCompatActivity {
 				});
 				holder.itemView.findViewById(R.id.delete).setOnClickListener(new View.OnClickListener() {
 
+					boolean temp = false;
+
 					@Override
 					public void onClick(View view) {
 						Toast.makeText(view.getContext(), "Delete " + position, Toast.LENGTH_LONG).show();

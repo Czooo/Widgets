@@ -10,6 +10,7 @@ import android.view.ViewGroup;
  * Author create by ok on 2019-08-08
  * Email : ok@163.com.
  */
+@Deprecated
 public class FlowLabelView extends ViewGroup {
 
 	private static final boolean DEBUG = true;

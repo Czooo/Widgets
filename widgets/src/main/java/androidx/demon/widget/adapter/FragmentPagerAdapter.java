@@ -49,7 +49,7 @@ public abstract class FragmentPagerAdapter extends ViewPagerCompat.Adapter {
 	}
 
 	@Override
-	public void onDestoryItem(@NonNull ViewGroup container, @NonNull Object object, int position) {
+	public void onDestroyItem(@NonNull ViewGroup container, @NonNull Object object, int position) {
 		if (this.mCurTransaction == null) {
 			this.mCurTransaction = this.mFragmentManager.beginTransaction();
 		}

@@ -1,4 +1,4 @@
-package androidx.demon.widget.cacher;
+package androidx.demon.widget.cache;
 
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Author create by ok on 2018/7/2 0002
  * Email : ok@163.com.
  */
-public abstract class ViewCacher implements Cacher<View, ViewGroup> {
+public abstract class ViewCache implements ICache<View, ViewGroup> {
 
 	private static final int DEFAULT_MAX_POOL_SIZE = 10;
 
@@ -18,11 +18,11 @@ public abstract class ViewCacher implements Cacher<View, ViewGroup> {
 	private Node mNode;
 	private int curPoolSize;
 
-	public ViewCacher() {
+	public ViewCache() {
 		this(DEFAULT_MAX_POOL_SIZE);
 	}
 
-	public ViewCacher(int maxPoolSize) {
+	public ViewCache(int maxPoolSize) {
 		this.mNode = new Node();
 		this.mPoolSize.set(maxPoolSize);
 	}

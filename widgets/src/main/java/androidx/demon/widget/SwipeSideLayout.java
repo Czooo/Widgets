@@ -52,6 +52,13 @@ public class SwipeSideLayout extends DragRelativeLayout {
 	}
 
 	@Override
+	protected void onFinishInflate() {
+		super.onFinishInflate();
+		this.getDrawerView();
+		this.getDragView();
+	}
+
+	@Override
 	protected LayoutParams generateDefaultLayoutParams() {
 		return new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
 	}

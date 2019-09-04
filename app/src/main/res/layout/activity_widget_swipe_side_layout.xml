@@ -13,7 +13,7 @@
         android:layout_height="match_parent"
         android:background="@android:drawable/screen_background_dark_transparent"
         android:fitsSystemWindows="false"
-        app:scrollLayout="top"
+        app:scroll_gravity="top"
         tools:ignore="MissingPrefix">
 
         <androidx.appcompat.widget.AppCompatTextView

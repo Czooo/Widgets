@@ -26,21 +26,21 @@ public class DefaultHeaderLoadView extends RefreshLayout.SimpleLoadView {
 	}
 
 	@Override
-	public void onRefreshPull(@NonNull RefreshLayout refreshLayout, int scrollOffset, float offset) {
-		if(offset >= 1.f) {
-			((TextView)this.getContentView().findViewById(R.id.app_refresh_load_text_view)).setText("释放刷新");
-		} else{
-			((TextView)this.getContentView().findViewById(R.id.app_refresh_load_text_view)).setText("下拉刷新");
+	public void onRefreshPull(int scrollOffset, float offset) {
+		if (offset >= 1.f) {
+			((TextView) this.getContentView().findViewById(R.id.app_refresh_load_text_view)).setText("释放刷新");
+		} else {
+			((TextView) this.getContentView().findViewById(R.id.app_refresh_load_text_view)).setText("下拉刷新");
 		}
 	}
 
 	@Override
-	public void onRefreshing(@NonNull RefreshLayout refreshLayout) {
+	public void onRefreshing() {
 		((TextView)this.getContentView().findViewById(R.id.app_refresh_load_text_view)).setText("刷新中");
 	}
 
 	@Override
-	public void onRefreshed(@NonNull RefreshLayout refreshLayout) {
+	public void onRefreshed() {
 		((TextView)this.getContentView().findViewById(R.id.app_refresh_load_text_view)).setText("刷新完成");
 	}
 }

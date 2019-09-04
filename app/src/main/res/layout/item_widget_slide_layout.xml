@@ -13,14 +13,17 @@
         android:id="@+id/slideLayout"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        app:dampSpringBackSize="20dp">
+        app:dampSpringBackSize="20dp"
+        app:drawerEnabled="true"
+        app:frictionRatio="0.75"
+        app:minScrollScale="0.15">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:background="@android:color/darker_gray"
             android:orientation="horizontal"
-            app:scrollLayout="right"
+            app:scroll_gravity="right"
             tools:ignore="MissingPrefix">
 
             <androidx.appcompat.widget.AppCompatTextView

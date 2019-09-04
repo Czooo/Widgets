@@ -26,7 +26,7 @@ public class DefaultFooterLoadView extends RefreshLayout.SimpleLoadView {
 	}
 
 	@Override
-	public void onRefreshPull(@NonNull RefreshLayout refreshLayout, int scrollOffset, float offset) {
+	public void onRefreshPull(int scrollOffset, float offset) {
 		if (offset >= 1.f) {
 			((TextView) this.getContentView().findViewById(R.id.app_refresh_load_text_view)).setText("释放加载");
 		} else {
@@ -35,12 +35,12 @@ public class DefaultFooterLoadView extends RefreshLayout.SimpleLoadView {
 	}
 
 	@Override
-	public void onRefreshing(@NonNull RefreshLayout refreshLayout) {
+	public void onRefreshing() {
 		((TextView) this.getContentView().findViewById(R.id.app_refresh_load_text_view)).setText("加载中");
 	}
 
 	@Override
-	public void onRefreshed(@NonNull RefreshLayout refreshLayout) {
+	public void onRefreshed() {
 		((TextView) this.getContentView().findViewById(R.id.app_refresh_load_text_view)).setText("加载完成");
 	}
 }

@@ -24,19 +24,19 @@ public class TripHorFooterLoadView extends DefaultHorFooterLoadView {
 	}
 
 	@Override
-	public int onGetScrollDistance(@NonNull RefreshLayout refreshLayout, @NonNull View container) {
-		if (this.mIsRefreshedTrip) {
-			return 0;
-		}
-		return super.onGetScrollDistance(refreshLayout, container);
-	}
-
-	@Override
-	public void onRefreshPull(@NonNull RefreshLayout refreshLayout, int scrollOffset, float offset) {
+	public void onRefreshPull(int scrollOffset, float offset) {
 		if (this.mIsRefreshedTrip) {
 			((TextView) this.getContentView().findViewById(androidx.demon.widget.R.id.app_refresh_load_text_view)).setText("没有更多");
 			return;
 		}
-		super.onRefreshPull(refreshLayout, scrollOffset, offset);
+		super.onRefreshPull(scrollOffset, offset);
+	}
+
+	@Override
+	public int onGetScrollDistance() {
+		if (this.mIsRefreshedTrip) {
+			return 0;
+		}
+		return super.onGetScrollDistance();
 	}
 }

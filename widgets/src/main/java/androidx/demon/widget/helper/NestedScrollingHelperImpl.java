@@ -30,7 +30,7 @@ import androidx.core.view.ViewCompat;
  */
 public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	private static final String TAG = "Nested";
 
 	private static final int INVALID_POINTER = -1;
@@ -384,11 +384,12 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				consumed[0] = this.mScrollStepConsumed[0];
 				consumed[1] = this.mScrollStepConsumed[1];
 
+				this.mScrollOffsetCount[0] += consumed[0];
+				this.mScrollOffsetCount[1] += consumed[1];
+
 				if (consumed[0] != 0 || consumed[1] != 0) {
 					this.dispatchOnScrolled(consumed[0], consumed[1]);
 				}
-				this.mScrollOffsetCount[0] += consumed[0];
-				this.mScrollOffsetCount[1] += consumed[1];
 			}
 			unconsumed[0] = (deltaX - consumed[0]);
 			unconsumed[1] = (deltaY - consumed[1]);

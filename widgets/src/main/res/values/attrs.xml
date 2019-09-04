@@ -40,17 +40,20 @@
             <enum name="matrix" value="7"/>
         </attr>
     </declare-styleable>
-    <declare-styleable name="RefreshLayout">
+    <declare-styleable name="DragRelativeLayout">
         <attr name="android:orientation"/>
-        <attr name="refreshMode" format="enum">
+        <attr name="frictionRatio" format="float"/>
+    </declare-styleable>
+    <declare-styleable name="DragRelativeLayout_Layout">
+        <attr name="scrollFlag" format="enum">
             <enum name="none" value="0"/>
             <enum name="start" value="-1"/>
             <enum name="end" value="1"/>
             <enum name="all" value="2"/>
         </attr>
     </declare-styleable>
-    <declare-styleable name="RefreshLayout_Layout">
-        <attr name="scrollFlag" format="enum">
+    <declare-styleable name="RefreshLayout">
+        <attr name="refreshMode" format="enum">
             <enum name="none" value="0"/>
             <enum name="start" value="-1"/>
             <enum name="end" value="1"/>
@@ -59,9 +62,11 @@
     </declare-styleable>
     <declare-styleable name="SwipeSideLayout">
         <attr name="dampSpringBackSize" format="dimension|reference"/>
+        <attr name="drawerEnabled" format="boolean"/>
+        <attr name="minScrollScale" format="float"/>
     </declare-styleable>
     <declare-styleable name="SwipeSideLayout_Layout">
-        <attr name="scrollLayout" format="enum">
+        <attr name="scroll_gravity" format="enum">
             <enum name="left" value="1"/>
             <enum name="top" value="2"/>
             <enum name="right" value="3"/>

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +26,7 @@ import androidx.demon.widget.IndicatorView;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
 import androidx.demon.widget.adapter.PagerAdapter;
+import androidx.demon.widget.helper.NestedScrollingHelper;
 import androidx.demon.widget.transformers.HorDepthPageTransformer;
 
 public class MainActivity extends AppCompatActivity {
@@ -36,6 +38,23 @@ public class MainActivity extends AppCompatActivity {
 
 		final RefreshLayout mRefreshLayout = this.findViewById(R.id.refreshLayout);
 		mRefreshLayout.setFooterLoadView(new TripFooterLoadView());
+		mRefreshLayout.addOnScrollListener(new RefreshLayout.OnScrollListener() {
+			@Override
+			public void onScrolled(@NonNull ViewGroup container, int dx, int dy) {
+				final RefreshLayout refreshLayout = (RefreshLayout) container;
+				final NestedScrollingHelper helper = refreshLayout.getNestedScrollingHelper();
+				final int scrollOffsetY = helper.getScrollOffsetY();
+				final int preScrollOffsetY = scrollOffsetY + dy;
+
+				final ViewGroup headerParent = refreshLayout.getHeaderParent();
+				Log.e("Main", "onScrolled " + preScrollOffsetY + " == " + (int) (preScrollOffsetY * refreshLayout.getFrictionRatio()) + " == " + headerParent.getMeasuredHeight());
+			}
+
+			@Override
+			public void onScrollStateChanged(@NonNull ViewGroup container, int scrollState) {
+
+			}
+		});
 		mRefreshLayout.setOnRefreshListener(new RefreshLayout.OnRefreshListener() {
 
 			@Override
@@ -48,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
 				}, 2000);
 			}
 		});
+		mRefreshLayout.setRefreshing(true);
 
 		final ArrayList<String> data = new ArrayList<>();
 		data.add("http://img0.imgtn.bdimg.com/it/u=3106526341,3733396167&fm=26&gp=0.jpg");

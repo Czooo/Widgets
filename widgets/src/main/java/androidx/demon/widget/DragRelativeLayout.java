@@ -259,12 +259,12 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 	@CallSuper
 	@Override
 	public boolean canChildScroll(int direction) {
+		if (this.mOnChildScrollCallback != null) {
+			return this.mOnChildScrollCallback.canChildScroll(this, direction);
+		}
 		if ((!this.isDraggingToStart() && direction < 0)
 				|| (!this.isDraggingToEnd() && direction > 0)) {
 			return true;
-		}
-		if (this.mOnChildScrollCallback != null) {
-			return this.mOnChildScrollCallback.canChildScroll(this, direction);
 		}
 		if (this.mDragManager == null) {
 			return true;

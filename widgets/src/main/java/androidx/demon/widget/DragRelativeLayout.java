@@ -52,6 +52,7 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 	@OrientationMode
 	private int mOrientation = VERTICAL;
 	private float mFrictionRatio = FRICTION_RATIO;
+	private boolean mIsShouldStartNestedScroll = false;
 	private boolean mIsDraggingToStart = true;
 	private boolean mIsDraggingToEnd = true;
 
@@ -251,7 +252,8 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 		if (this.mDragManager == null) {
 			return false;
 		}
-		return this.mDragManager.shouldStartNestedScroll();
+		return this.mIsShouldStartNestedScroll
+				&& this.mDragManager.shouldStartNestedScroll();
 	}
 
 	@CallSuper
@@ -292,6 +294,10 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 				listener.onScrollStateChanged(this, scrollState);
 			}
 		}
+	}
+
+	public void setShouldStartNestedScroll(boolean shouldStartNestedScroll) {
+		this.mIsShouldStartNestedScroll = shouldStartNestedScroll;
 	}
 
 	public void setDraggingToStart(boolean start) {

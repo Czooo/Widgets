@@ -49,6 +49,7 @@ public class SwipeSideLayout extends DragRelativeLayout {
 		this.setDampSpringBackSize(mDampSpringBackSize);
 		this.setDrawerEnabled(mIsDrawerEnabled);
 		this.setMinScrollScale(mMinScrollScale);
+		this.setShouldStartNestedScroll(true);
 	}
 
 	@Override

@@ -40,6 +40,7 @@ public class RefreshLayout extends DragRelativeLayout {
 		this.setHeaderScrollStyleMode(SCROLL_STYLE_AFTER_FOLLOWED);
 		this.setFooterScrollStyleMode(SCROLL_STYLE_FOLLOWED);
 		this.setRefreshMode(RefreshMode.parse(mRefreshMode));
+		this.setShouldStartNestedScroll(true);
 
 		if (VERTICAL == this.getOrientation()) {
 			this.setHeaderLoadView(new DefaultHeaderLoadView());

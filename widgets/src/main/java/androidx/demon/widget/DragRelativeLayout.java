@@ -78,11 +78,12 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 		final TypedArray mTypedArray = context.obtainStyledAttributes(attrs, R.styleable.DragRelativeLayout);
 		final int mOrientation = mTypedArray.getInt(R.styleable.DragRelativeLayout_android_orientation, this.mOrientation);
 		final float mFrictionRatio = mTypedArray.getFloat(R.styleable.DragRelativeLayout_frictionRatio, this.mFrictionRatio);
+		final boolean mIsShouldStartNestedScroll = mTypedArray.getBoolean(R.styleable.DragRelativeLayout_shouldStartNestedScroll, this.mIsShouldStartNestedScroll);
 		mTypedArray.recycle();
 
 		this.setOrientation(mOrientation);
 		this.setFrictionRatio(mFrictionRatio);
-
+		this.setShouldStartNestedScroll(mIsShouldStartNestedScroll);
 		this.mNestedScrollingHelper = new NestedScrollingHelperImpl(this, this);
 	}
 

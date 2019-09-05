@@ -43,6 +43,7 @@
     <declare-styleable name="DragRelativeLayout">
         <attr name="android:orientation"/>
         <attr name="frictionRatio" format="float"/>
+        <attr name="shouldStartNestedScroll" format="boolean"/>
     </declare-styleable>
     <declare-styleable name="DragRelativeLayout_Layout">
         <attr name="scrollFlag" format="enum">

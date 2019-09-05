@@ -71,30 +71,31 @@ public class SwipeSideDragManager extends DragRelativeLayout.DragManager {
 
 	@Override
 	public void onScrollBy(@NonNull NestedScrollingHelper helper, int dx, int dy, @NonNull int[] consumed) {
+		final int drawerDirection = this.getDrawerDirection();
 		final int mScrollOffsetX = helper.getScrollOffsetX();
 		final int mScrollOffsetY = helper.getScrollOffsetY();
 		int unconsumedX = dx;
 		int unconsumedY = dy;
 
 		int direction = helper.getScrollDirection();
-		if (direction == 0) {
-			if (this.canScrollHorizontally()) {
-				direction = helper.getPreScrollDirection(dx);
-			} else if (this.canScrollVertically()) {
-				direction = helper.getPreScrollDirection(dy);
-			}
+		if (this.canScrollHorizontally()) {
+			direction = helper.getPreScrollDirection(dx);
+		} else if (this.canScrollVertically()) {
+			direction = helper.getPreScrollDirection(dy);
 		}
 
 		if (NestedScrollingHelper.SCROLL_STATE_DRAGGING == helper.getScrollState()) {
-			final int mScrollDistancePixelSize = this.getScrollDistancePixelSize();
-			final int mPreScrollOffsetX = mScrollOffsetX + dx;
-			final int mPreScrollOffsetY = mScrollOffsetY + dy;
-			// If you need boundary detection
-			if (this.canScrollHorizontally() && Math.abs(mPreScrollOffsetX) > Math.abs(mScrollDistancePixelSize)) {
-				unconsumedX = mScrollDistancePixelSize - mScrollOffsetX;
-			}
-			if (this.canScrollVertically() && Math.abs(mPreScrollOffsetY) > Math.abs(mScrollDistancePixelSize)) {
-				unconsumedY = mScrollDistancePixelSize - mScrollOffsetY;
+			if (direction == drawerDirection) {
+				final int mScrollDistancePixelSize = this.getScrollDistancePixelSize();
+				final int mPreScrollOffsetX = mScrollOffsetX + dx;
+				final int mPreScrollOffsetY = mScrollOffsetY + dy;
+				// If you need boundary detection
+				if (this.canScrollHorizontally() && Math.abs(mPreScrollOffsetX) > Math.abs(mScrollDistancePixelSize)) {
+					unconsumedX = mScrollDistancePixelSize - mScrollOffsetX;
+				}
+				if (this.canScrollVertically() && Math.abs(mPreScrollOffsetY) > Math.abs(mScrollDistancePixelSize)) {
+					unconsumedY = mScrollDistancePixelSize - mScrollOffsetY;
+				}
 			}
 		}
 		consumed[0] = unconsumedX;
@@ -106,7 +107,7 @@ public class SwipeSideDragManager extends DragRelativeLayout.DragManager {
 		this.mDragView.setTranslationY(-preScrollOffsetY);
 
 		// direction same
-		if (direction == this.getDrawerDirection()) {
+		if (direction == drawerDirection) {
 			if (this.mDrawerView.getVisibility() == View.INVISIBLE) {
 				this.mDrawerView.setVisibility(View.VISIBLE);
 			}
@@ -121,21 +122,29 @@ public class SwipeSideDragManager extends DragRelativeLayout.DragManager {
 	@Override
 	public void onScrollStateChanged(@NonNull NestedScrollingHelper helper, int scrollState) {
 		if (NestedScrollingHelper.SCROLL_STATE_IDLE == scrollState) {
+			final int scrollDirection = helper.getScrollDirection();
+			final int drawerDirection = this.getDrawerDirection();
 			final int scrollDistance = this.getScrollDistancePixelSize();
 
 			final int scrollOffset = helper.getScrollOffset();
 			final int absScrollOffset = Math.abs(scrollOffset);
 			final int absScrollDistance = Math.abs(scrollDistance);
-			final boolean directionFlags = (scrollOffset < 0 && scrollDistance < 0) || (scrollOffset > 0 && scrollDistance > 0);
+
+			if (scrollDirection != drawerDirection
+					&& absScrollOffset > 0
+					&& absScrollDistance > 0) {
+				this.setOpenState(false);
+				return;
+			}
 
 			if (this.mIsOpenState) {
-				if (directionFlags && absScrollOffset <= absScrollDistance * (1 - this.mMinScrollScale)) {
+				if (absScrollOffset <= absScrollDistance * (1 - this.mMinScrollScale)) {
 					this.setOpenState(false);
 				} else if (absScrollOffset != absScrollDistance) {
 					this.setOpenState(true);
 				}
 			} else {
-				if (directionFlags && absScrollOffset >= absScrollDistance * this.mMinScrollScale) {
+				if (absScrollOffset >= absScrollDistance * this.mMinScrollScale) {
 					this.setOpenState(true);
 				} else if (absScrollOffset != 0) {
 					this.setOpenState(false);
@@ -261,17 +270,13 @@ public class SwipeSideDragManager extends DragRelativeLayout.DragManager {
 	}
 
 	private int getScrollDistancePixelSize() {
-		final float distance;
+		float distance = 0;
 		if (this.shouldStartNestedScroll()) {
 			if (this.canScrollHorizontally()) {
 				distance = this.mDrawerView.getMeasuredWidth();
 			} else if (this.canScrollVertically()) {
 				distance = this.mDrawerView.getMeasuredHeight();
-			} else {
-				distance = 0;
 			}
-		} else {
-			distance = 0;
 		}
 		final int direction = this.getDrawerDirection();
 		final float pixelSize = NestedHelper.getDirectionDifference(direction);

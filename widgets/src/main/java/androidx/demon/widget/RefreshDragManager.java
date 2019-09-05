@@ -55,12 +55,10 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		int unconsumedY = dy;
 
 		int direction = helper.getScrollDirection();
-		if (direction == 0) {
-			if (this.canScrollHorizontally()) {
-				direction = helper.getPreScrollDirection(dx);
-			} else if (this.canScrollVertically()) {
-				direction = helper.getPreScrollDirection(dy);
-			}
+		if (this.canScrollHorizontally()) {
+			direction = helper.getPreScrollDirection(dx);
+		} else if (this.canScrollVertically()) {
+			direction = helper.getPreScrollDirection(dy);
 		}
 
 		if (this.mIsRefreshing) {

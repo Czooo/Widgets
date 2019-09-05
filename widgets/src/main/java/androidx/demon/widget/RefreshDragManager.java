@@ -54,11 +54,17 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		int unconsumedX = dx;
 		int unconsumedY = dy;
 
+		int direction = 0;
+		if (this.canScrollHorizontally()) {
+			direction = helper.getPreScrollDirection(dx);
+		} else if (this.canScrollVertically()) {
+			direction = helper.getPreScrollDirection(dy);
+		}
+
 		if (this.mIsRefreshing) {
-			final int mScrollDirection = helper.getScrollDirection();
+			final int mPreScrollDistance = this.getPreScrollDistance2(direction);
 			final int mPreScrollOffsetX = mScrollOffsetX + dx;
 			final int mPreScrollOffsetY = mScrollOffsetY + dy;
-			final int mPreScrollDistance = this.getPreScrollDistance(mScrollDirection);
 			// If you need boundary detection
 			if (this.canScrollHorizontally() && Math.abs(mPreScrollOffsetX) < Math.abs(mPreScrollDistance)) {
 				unconsumedX = mPreScrollDistance - mScrollOffsetX;
@@ -70,17 +76,15 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		consumed[0] = unconsumedX;
 		consumed[1] = unconsumedY;
 
-		final float nowScrollOffsetX = mScrollOffsetX + consumed[0];
-		final float nowScrollOffsetY = mScrollOffsetY + consumed[1];
-		this.mDragView.setTranslationX(-(nowScrollOffsetX * this.getFrictionRatio()));
-		this.mDragView.setTranslationY(-(nowScrollOffsetY * this.getFrictionRatio()));
+		final int preScrollOffsetX = (int) ((mScrollOffsetX + consumed[0]) * this.getFrictionRatio() + NestedHelper.getDirectionDifference(direction));
+		final int preScrollOffsetY = (int) ((mScrollOffsetY + consumed[1]) * this.getFrictionRatio() + NestedHelper.getDirectionDifference(direction));
+		this.mDragView.setTranslationX(-preScrollOffsetX);
+		this.mDragView.setTranslationY(-preScrollOffsetY);
 
 		if (RefreshLayout.HORIZONTAL == this.getOrientation()) {
-			final int direction = helper.getPreScrollDirection(dx);
-			this.dispatchOnRefreshPull(direction, (int) (nowScrollOffsetX + NestedHelper.getDirectionDifference(direction)));
+			this.dispatchOnRefreshPull(direction, preScrollOffsetX);
 		} else {
-			final int direction = helper.getPreScrollDirection(dy);
-			this.dispatchOnRefreshPull(direction, (int) (nowScrollOffsetY + NestedHelper.getDirectionDifference(direction)));
+			this.dispatchOnRefreshPull(direction, preScrollOffsetY);
 		}
 	}
 
@@ -89,7 +93,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		if (NestedScrollingHelper.SCROLL_STATE_IDLE == scrollState) {
 			final float mScrollOffset = helper.getScrollOffset();
 			final int mScrollDirection = helper.getScrollDirection();
-			final int mPreScrollDistance = this.getPreScrollDistance(mScrollDirection);
+			final int mPreScrollDistance = this.getPreScrollDistance2(mScrollDirection);
 
 			if (this.mIsRefreshing) {
 				if (Math.abs(mPreScrollDistance) != Math.abs(mScrollOffset)) {
@@ -178,7 +182,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		if (!this.mIsRefreshing && refreshing) {
 			mScrollDirection = mScrollDirection == 0 ? -1 : mScrollDirection;
 		}
-		final int mPreScrollDistance = this.getPreScrollDistance(mScrollDirection);
+		final int mPreScrollDistance = this.getPreScrollDistance2(mScrollDirection);
 
 		int destinationX = 0;
 		int destinationY = 0;
@@ -345,8 +349,8 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 	}
 
 	private void dispatchOnRefreshPull(int direction, int scrollOffset) {
-		final int mPreScrollDistance = this.getPreScrollDistance(direction);
-		// use scroll scale
+		// use scrollScale
+		final float mPreScrollDistance = this.getPreScrollDistance(direction);
 		final float mScrollOffsetScale = Math.abs(scrollOffset) / Math.max(Math.abs(mPreScrollDistance) * 1.F, 1.F);
 
 		if (direction < 0 && this.mRefreshMode.hasStartMode()) {
@@ -389,7 +393,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 			if (preLayoutParams.mScrollFlag == RefreshLayout.LayoutParams.SCROLL_FLAG_ALL
 					|| (preLayoutParams.mScrollFlag == RefreshLayout.LayoutParams.SCROLL_FLAG_START && scrollOffset <= 0)
 					|| (preLayoutParams.mScrollFlag == RefreshLayout.LayoutParams.SCROLL_FLAG_END && scrollOffset >= 0)) {
-				childScrollOffset = -(int) (scrollOffset * this.getFrictionRatio() + NestedHelper.getDirectionDifference(direction));
+				childScrollOffset = -scrollOffset;
 			}
 			if (RefreshLayout.VERTICAL == this.getOrientation()) {
 				preView.setTranslationY(childScrollOffset);
@@ -416,16 +420,18 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 	}
 
 	private int getPreScrollDistance(int direction) {
-		final float distance;
+		int distance = 0;
 		// 高度作为刷新条件之一
 		if (direction < 0 && this.mRefreshMode.hasStartMode()) {
 			distance = -this.mHeaderLoadView.onGetScrollDistance();
 		} else if (direction > 0 && this.mRefreshMode.hasEndMode()) {
 			distance = this.mFooterLoadView.onGetScrollDistance();
-		} else {
-			distance = 0.F;
 		}
-		return (int) (distance / this.getFrictionRatio() + NestedHelper.getDirectionDifference(direction));
+		return distance;
+	}
+
+	private int getPreScrollDistance2(int direction) {
+		return (int) (this.getPreScrollDistance(direction) / this.getFrictionRatio() + NestedHelper.getDirectionDifference(direction));
 	}
 
 	private int getHeaderLoadViewScrollOffset(int scrollOffset) {
@@ -433,14 +439,14 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		if (loadView != null && loadView.isShown()) {
 			final int viewSize;
 			if (RefreshLayout.VERTICAL == this.getOrientation()) {
-				viewSize = (int) (loadView.getMeasuredHeight() / this.getFrictionRatio() + 0.5F);
+				viewSize = loadView.getMeasuredHeight();
 			} else {
-				viewSize = (int) (loadView.getMeasuredWidth() / this.getFrictionRatio() + 0.5F);
+				viewSize = loadView.getMeasuredWidth();
 			}
 			if (this.mHeaderScrollStyleMode == SCROLL_STYLE_AFTER_FOLLOWED) {
-				return (int) -(Math.min(0, viewSize + scrollOffset) * this.getFrictionRatio() - 0.5F);
+				return -(Math.min(0, viewSize + scrollOffset));
 			}
-			return (int) -(Math.min(viewSize, viewSize + scrollOffset) * this.getFrictionRatio() - 0.5F);
+			return -(Math.min(viewSize, viewSize + scrollOffset));
 		}
 		return 0;
 	}
@@ -450,14 +456,14 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		if (loadView != null && loadView.isShown()) {
 			final int viewSize;
 			if (RefreshLayout.VERTICAL == this.getOrientation()) {
-				viewSize = (int) (loadView.getMeasuredHeight() / this.getFrictionRatio() + 0.5F);
+				viewSize = loadView.getMeasuredHeight();
 			} else {
-				viewSize = (int) (loadView.getMeasuredWidth() / this.getFrictionRatio() + 0.5F);
+				viewSize = loadView.getMeasuredWidth();
 			}
 			if (this.mFooterScrollStyleMode == SCROLL_STYLE_AFTER_FOLLOWED) {
-				return (int) (Math.min(0, viewSize - scrollOffset) * this.getFrictionRatio() + 0.5F);
+				return (Math.min(0, viewSize - scrollOffset));
 			}
-			return (int) (Math.min(viewSize, viewSize - scrollOffset) * this.getFrictionRatio() + 0.5F);
+			return (Math.min(viewSize, viewSize - scrollOffset));
 		}
 		return 0;
 	}

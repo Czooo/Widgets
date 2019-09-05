@@ -75,13 +75,16 @@ public class SwipeSideDragManager extends DragRelativeLayout.DragManager {
 		final int mScrollOffsetY = helper.getScrollOffsetY();
 		int unconsumedX = dx;
 		int unconsumedY = dy;
-		int direction = 0;
 
-		if (this.canScrollHorizontally()) {
-			direction = Integer.compare(helper.getPreScrollDirection(dx), 0);
-		} else if (this.canScrollVertically()) {
-			direction = Integer.compare(helper.getPreScrollDirection(dy), 0);
+		int direction = helper.getScrollDirection();
+		if (direction == 0) {
+			if (this.canScrollHorizontally()) {
+				direction = helper.getPreScrollDirection(dx);
+			} else if (this.canScrollVertically()) {
+				direction = helper.getPreScrollDirection(dy);
+			}
 		}
+
 		if (NestedScrollingHelper.SCROLL_STATE_DRAGGING == helper.getScrollState()) {
 			final int mScrollDistancePixelSize = this.getScrollDistancePixelSize();
 			final int mPreScrollOffsetX = mScrollOffsetX + dx;
@@ -97,19 +100,17 @@ public class SwipeSideDragManager extends DragRelativeLayout.DragManager {
 		consumed[0] = unconsumedX;
 		consumed[1] = unconsumedY;
 
-		final int nowScrollOffsetX = (int) ((mScrollOffsetX + consumed[0]) * this.getFrictionRatio() + NestedHelper.getDirectionDifference(direction));
-		final int nowScrollOffsetY = (int) ((mScrollOffsetY + consumed[1]) * this.getFrictionRatio() + NestedHelper.getDirectionDifference(direction));
-		this.mDragView.setTranslationX(-nowScrollOffsetX);
-		this.mDragView.setTranslationY(-nowScrollOffsetY);
-
-		final int mDrawerDirection = this.getDrawerDirection();
+		final int preScrollOffsetX = (int) ((mScrollOffsetX + consumed[0]) * this.getFrictionRatio() + NestedHelper.getDirectionDifference(direction));
+		final int preScrollOffsetY = (int) ((mScrollOffsetY + consumed[1]) * this.getFrictionRatio() + NestedHelper.getDirectionDifference(direction));
+		this.mDragView.setTranslationX(-preScrollOffsetX);
+		this.mDragView.setTranslationY(-preScrollOffsetY);
 
 		// direction same
-		if (direction == mDrawerDirection) {
+		if (direction == this.getDrawerDirection()) {
 			if (this.mDrawerView.getVisibility() == View.INVISIBLE) {
 				this.mDrawerView.setVisibility(View.VISIBLE);
 			}
-			this.onDrawerAnimation(this.mDrawerView, nowScrollOffsetX, nowScrollOffsetY, direction);
+			this.onDrawerAnimation(this.mDrawerView, preScrollOffsetX, preScrollOffsetY, direction);
 		} else {
 			if (this.mDrawerView.getVisibility() == View.VISIBLE) {
 				this.mDrawerView.setVisibility(View.INVISIBLE);

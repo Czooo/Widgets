@@ -48,6 +48,10 @@ public interface NestedScrollingHelper extends NestedScrollingParent, NestedScro
 
 	void smoothScrollTo(int x, int y, long delayMillis);
 
+	void lockedNestedScroll();
+
+	void unlockedNestedScroll();
+
 	int getPreScrollDirection(int delta);
 
 	int getScrollDirection();

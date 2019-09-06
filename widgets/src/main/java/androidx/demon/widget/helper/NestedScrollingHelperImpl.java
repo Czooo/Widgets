@@ -376,6 +376,9 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				}
 			}
 
+			if (DEBUG) {
+				Log.e(TAG, "scrollStep unconsumedY " + unconsumedY);
+			}
 			if (unconsumedX != 0 || unconsumedY != 0) {
 				Arrays.fill(this.mScrollStepConsumed, 0);
 				// start dragging
@@ -524,6 +527,16 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	}
 
 	@Override
+	public void lockedNestedScroll() {
+
+	}
+
+	@Override
+	public void unlockedNestedScroll() {
+
+	}
+
+	@Override
 	public int getPreScrollDirection(int delta) {
 		return Integer.compare(this.getScrollOffset() + delta, 0);
 	}
@@ -564,10 +577,12 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	}
 
 	private boolean dispatchOnStartNestedScroll() {
-		if (this.mCallback == null) {
+		if (this.mCallback == null
+				|| this.mAnchorView == null) {
 			return false;
 		}
 		return this.mAnchorView.isEnabled()
+				&& this.mAnchorView.isShown()
 				&& this.mCallback.shouldStartNestedScroll();
 	}
 
@@ -954,7 +969,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 		// nested scrolling parent has stopped handling events. We do that by using the
 		// 'offset in window 'functionality to see if we have been moved from the event.
 		// This is a decent indication of whether we should take over the event stream or not.
-		if (this.mCallback.shouldStartNestedScroll()) {
+		if (this.dispatchOnStartNestedScroll()) {
 			final int dx = dxUnconsumed + this.mParentOffsetInWindow[0];
 			final int dy = dyUnconsumed + this.mParentOffsetInWindow[1];
 
@@ -1000,12 +1015,15 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	@Override
 	public void onNestedPreScroll(@NonNull View target, int dx, int dy, @NonNull int[] consumed) {
 		// If we are in the middle of consuming, a scroll, then we want to move the spinner back up before allowing the list to scroll
-		if (this.mCallback.shouldStartNestedScroll()) {
+		if (DEBUG) {
+			Log.e(TAG, "onNestedPreScroll dy " + dy + " dispatchOnStartNestedScroll " + dispatchOnStartNestedScroll());
+		}
+		if (this.dispatchOnStartNestedScroll()) {
 			final int dxConsumed = this.getScrollOffsetX();
 			final int dyConsumed = this.getScrollOffsetY();
 
 			if (DEBUG) {
-				Log.e(TAG, "onNestedPreScrollA dy " + dy + " dyConsumed " + dyConsumed + " shouldLockNestedScroll " + mCallback.shouldStartNestedScroll());
+				Log.e(TAG, "onNestedPreScrollA dy " + dy + " dyConsumed " + dyConsumed + " dispatchOnStartNestedScroll " + dispatchOnStartNestedScroll());
 			}
 
 			int unconsumedX = 0;
@@ -1054,7 +1072,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				consumed[0] -= this.unconsumed[0];
 				consumed[1] -= this.unconsumed[1];
 			}
-
 			if (DEBUG) {
 				Log.e(TAG, "onNestedPreScrollB consumedY " + consumed[1] + " => " + mParentScrollConsumed[1]);
 			}

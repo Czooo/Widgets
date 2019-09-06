@@ -20,6 +20,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 
 	private boolean mIsNotifying;
 	private boolean mIsRefreshing;
+	private boolean mIsTempStopNestedScroll;
 	private boolean mIsFinishRollbackInProgress;
 	private boolean mIsFinishRollbackInDragging;
 
@@ -33,7 +34,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		if (this.mDragView == null) {
 			this.mDragView = this.getDragView();
 		}
-		return this.mDragView != null && !this.mIsNotifying;
+		return this.mDragView != null && !this.mIsNotifying && !this.mIsTempStopNestedScroll;
 	}
 
 	@Override
@@ -90,15 +91,14 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 
 	@Override
 	public void onScrollStateChanged(@NonNull NestedScrollingHelper helper, int scrollState) {
+		final int mScrollDirection = helper.getScrollDirection();
+
 		if (NestedScrollingHelper.SCROLL_STATE_IDLE == scrollState) {
 			final float mScrollOffset = helper.getScrollOffset();
-			final int mScrollDirection = helper.getScrollDirection();
 			final int mPreScrollDistance = this.getPreScrollDistance2(mScrollDirection);
 
 			if (this.mIsRefreshing) {
-				if (Math.abs(mPreScrollDistance) != Math.abs(mScrollOffset)) {
-					this.performRefreshing(true, this.mIsNotifying);
-				} else {
+				if (Math.abs(mPreScrollDistance) == Math.abs(mScrollOffset)) {
 					if (this.mIsNotifying) {
 						this.mIsNotifying = false;
 						// your refreshing
@@ -106,6 +106,8 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 							this.mOnRefreshListener.onRefreshing((RefreshLayout) this.getDragRelativeLayout(), RefreshMode.parse(mScrollDirection));
 						}
 					}
+				} else {
+					this.performRefreshing(true, this.mIsNotifying);
 				}
 			} else {
 				if (!this.mIsFinishRollbackInProgress
@@ -115,16 +117,22 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 				} else if (Math.abs(mScrollOffset) != 0) {
 					this.performRefreshing(false, false);
 				} else {
+					this.mIsTempStopNestedScroll = false;
 					this.mIsFinishRollbackInProgress = false;
 					this.mIsFinishRollbackInDragging = false;
 					this.mHeaderContainer.setVisibility(View.GONE);
 					this.mFooterContainer.setVisibility(View.GONE);
 				}
 			}
-		} else if (NestedScrollingHelper.SCROLL_STATE_DRAGGING == scrollState) {
-			if (this.mIsFinishRollbackInProgress
-					&& !this.mIsFinishRollbackInDragging) {
-				this.mIsFinishRollbackInProgress = false;
+		} else {
+			if (this.mIsFinishRollbackInProgress) {
+				if (this.canChildScroll(mScrollDirection)) {
+					this.mIsTempStopNestedScroll = true;
+				} else {
+					if (!this.mIsFinishRollbackInDragging) {
+						this.mIsFinishRollbackInProgress = false;
+					}
+				}
 			}
 		}
 	}
@@ -175,62 +183,48 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 	}
 
 	private void performRefreshing(boolean refreshing, boolean notifying, long delayMillis) {
-		final NestedScrollingHelper mNestedScrollingHelper = this.getNestedScrollingHelper();
-		int mScrollDirection = mNestedScrollingHelper.getScrollDirection();
-
-		// 来自：非手势刷新，默认是头部刷新
-		if (!this.mIsRefreshing && refreshing) {
-			mScrollDirection = mScrollDirection == 0 ? -1 : mScrollDirection;
-		}
-		final int mPreScrollDistance = this.getPreScrollDistance2(mScrollDirection);
-
-		int destinationX = 0;
-		int destinationY = 0;
-		boolean shouldRefreshing = refreshing;
-		boolean shouldDelaySmooth = delayMillis > 0;
+		int direction = this.getNestedScrollingHelper().getScrollDirection();
 
 		if (this.mIsRefreshing != refreshing) {
 			this.mIsRefreshing = refreshing;
 			this.mIsNotifying = notifying;
 
 			if (refreshing) {
-				this.dispatchOnRefreshing(mScrollDirection);
+				if (direction == 0) {
+					direction = -1;
+				}
+				this.dispatchOnRefreshing(direction);
 			} else {
 				this.mIsFinishRollbackInProgress = true;
-				this.dispatchOnRefreshed(mScrollDirection);
+				this.dispatchOnRefreshed(direction);
 
-				// if your wait
-				if (delayMillis > 0
-						&& Math.abs(mPreScrollDistance) > 0
-						&& Math.abs(mPreScrollDistance) < Math.abs(mNestedScrollingHelper.getScrollOffset())) {
-					shouldRefreshing = true;
-					shouldDelaySmooth = false;
-				}
-				if (NestedScrollingHelper.SCROLL_STATE_DRAGGING == mNestedScrollingHelper.getScrollState()) {
-					this.mIsFinishRollbackInDragging = true;
-
-					this.getDragRelativeLayout().postDelayed(new Runnable() {
-						@Override
-						public void run() {
-							mHeaderContainer.setVisibility(View.GONE);
-							mFooterContainer.setVisibility(View.GONE);
-						}
-					}, delayMillis);
-					return;
+				if (NestedScrollingHelper.SCROLL_STATE_IDLE != this.getNestedScrollingHelper().getScrollState()) {
+					if (this.canChildScroll(direction)) {
+						this.mIsTempStopNestedScroll = true;
+					} else {
+						this.mIsFinishRollbackInDragging = true;
+						this.getDragRelativeLayout().postDelayed(new Runnable() {
+							@Override
+							public void run() {
+								mHeaderContainer.setVisibility(View.GONE);
+								mFooterContainer.setVisibility(View.GONE);
+							}
+						}, delayMillis);
+						return;
+					}
 				}
 			}
 		}
-		if (shouldRefreshing) {
-			if (this.canScrollVertically()) {
-				destinationY = mPreScrollDistance;
-			} else if (this.canScrollHorizontally()) {
-				destinationX = mPreScrollDistance;
+		if (refreshing) {
+			if (this.canScrollHorizontally()) {
+				this.smoothScrollTo(this.getPreScrollDistance2(direction), 0, delayMillis);
+			} else if (this.canScrollVertically()) {
+				this.smoothScrollTo(0, this.getPreScrollDistance2(direction), delayMillis);
+			} else {
+				this.smoothScrollTo(0, 0);
 			}
-		}
-		if (shouldDelaySmooth) {
-			this.smoothScrollTo(destinationX, destinationY, delayMillis);
 		} else {
-			this.smoothScrollTo(destinationX, destinationY);
+			this.smoothScrollTo(0, 0, delayMillis);
 		}
 	}
 

@@ -502,7 +502,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	@Override
 	public void scrollTo(final int x, final int y, long delayMillis) {
 		this.mAnchorView.postDelayed(new Runnable() {
-
 			@Override
 			public void run() {
 				NestedScrollingHelperImpl.this.mViewScroller.scrollTo(x, y);
@@ -518,7 +517,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	@Override
 	public void smoothScrollTo(final int x, final int y, long delayMillis) {
 		this.mAnchorView.postDelayed(new Runnable() {
-
 			@Override
 			public void run() {
 				NestedScrollingHelperImpl.this.mViewScroller.smoothScrollTo(x, y);
@@ -882,9 +880,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	@Override
 	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	public boolean onStartNestedScroll(@NonNull View child, @NonNull View target, int nestedScrollAxes) {
-		if (DEBUG) {
-			Log.e(TAG, "onStartNestedScroll " + this.dispatchOnStartNestedScroll());
-		}
 		return target.isEnabled()
 				&& this.dispatchOnStartNestedScroll()
 				&& (((nestedScrollAxes & ViewCompat.SCROLL_AXIS_VERTICAL) != 0 && this.mCallback.canScrollVertically())
@@ -914,6 +909,8 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 		this.mNestedScrollInProgress = true;
 		// Dispatch up to the nested parent
 		this.startNestedScroll(nestedScrollAxes);
+		// Start scroll state
+		this.setScrollState(SCROLL_STATE_DRAGGING);
 	}
 
 	/**
@@ -964,12 +961,9 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	public void onNestedScroll(@NonNull View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
 		// Dispatch up to the nested parent first
 		this.dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, this.mParentOffsetInWindow);
-		// This is a bit of a hack. Nested scrolling works from the bottom up, and as we are
-		// sometimes between two nested scrolling views, we need a way to be able to know when any
-		// nested scrolling parent has stopped handling events. We do that by using the
-		// 'offset in window 'functionality to see if we have been moved from the event.
-		// This is a decent indication of whether we should take over the event stream or not.
-		if (this.dispatchOnStartNestedScroll()) {
+
+		if (NestedScrollingHelper.SCROLL_STATE_DRAGGING == this.mScrollState
+				&& this.dispatchOnStartNestedScroll()) {
 			final int dx = dxUnconsumed + this.mParentOffsetInWindow[0];
 			final int dy = dyUnconsumed + this.mParentOffsetInWindow[1];
 
@@ -986,7 +980,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				unconsumedY = dy;
 			}
 			if (unconsumedX != 0 || unconsumedY != 0) {
-				this.setScrollState(SCROLL_STATE_DRAGGING);
 				this.scrollByInternal(unconsumedX, unconsumedY);
 			}
 		}
@@ -1016,66 +1009,59 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	public void onNestedPreScroll(@NonNull View target, int dx, int dy, @NonNull int[] consumed) {
 		// If we are in the middle of consuming, a scroll, then we want to move the spinner back up before allowing the list to scroll
 		if (DEBUG) {
-			Log.e(TAG, "onNestedPreScroll dy " + dy + " dispatchOnStartNestedScroll " + dispatchOnStartNestedScroll());
+			Log.e(TAG, "onNestedPreScroll dy " + dy + " scrollOffsetY " + this.getScrollOffsetX() + " dispatchOnStartNestedScroll " + dispatchOnStartNestedScroll());
 		}
-		if (this.dispatchOnStartNestedScroll()) {
+		if (NestedScrollingHelper.SCROLL_STATE_DRAGGING == this.mScrollState
+				&& this.dispatchOnStartNestedScroll()) {
 			final int dxConsumed = this.getScrollOffsetX();
 			final int dyConsumed = this.getScrollOffsetY();
 
-			if (DEBUG) {
-				Log.e(TAG, "onNestedPreScrollA dy " + dy + " dyConsumed " + dyConsumed + " dispatchOnStartNestedScroll " + dispatchOnStartNestedScroll());
-			}
-
 			int unconsumedX = 0;
 			int unconsumedY = 0;
-			if (this.mCallback.canScrollHorizontally()) {
-				if (dx > 0 && dxConsumed < 0) {
-					if (dx + dxConsumed > 0) {
-						consumed[0] = dx + dxConsumed;
-						unconsumedX = -dxConsumed;
-					} else {
-						consumed[0] = dx;
-						unconsumedX = dx;
-					}
-				} else if (dx < 0 && dxConsumed > 0) {
-					if (dx + dxConsumed > 0) {
-						consumed[0] = dx;
-						unconsumedX = dx;
-					} else {
-						consumed[0] = dx + dxConsumed;
-						unconsumedX = -dxConsumed;
-					}
+			if (dx > 0 && dxConsumed < 0) {
+				if (dx + dxConsumed > 0) {
+					consumed[0] = dx + dxConsumed;
+					unconsumedX = -dxConsumed;
+				} else {
+					consumed[0] = dx;
+					unconsumedX = dx;
+				}
+			} else if (dx < 0 && dxConsumed > 0) {
+				if (dx + dxConsumed > 0) {
+					consumed[0] = dx;
+					unconsumedX = dx;
+				} else {
+					consumed[0] = dx + dxConsumed;
+					unconsumedX = -dxConsumed;
 				}
 			}
-			if (this.mCallback.canScrollVertically()) {
-				if (dy > 0 && dyConsumed < 0) {
-					if (dy + dyConsumed > 0) {
-						consumed[1] = dy + dyConsumed;
-						unconsumedY = -dyConsumed;
-					} else {
-						consumed[1] = dy;
-						unconsumedY = dy;
-					}
-				} else if (dy < 0 && dyConsumed > 0) {
-					if (dy + dyConsumed > 0) {
-						consumed[1] = dy;
-						unconsumedY = dy;
-					} else {
-						consumed[1] = dy + dyConsumed;
-						unconsumedY = -dyConsumed;
-					}
+			if (dy > 0 && dyConsumed < 0) {
+				if (dy + dyConsumed > 0) {
+					consumed[1] = dy + dyConsumed;
+					unconsumedY = -dyConsumed;
+				} else {
+					consumed[1] = dy;
+					unconsumedY = dy;
+				}
+			} else if (dy < 0 && dyConsumed > 0) {
+				if (dy + dyConsumed > 0) {
+					consumed[1] = dy;
+					unconsumedY = dy;
+				} else {
+					consumed[1] = dy + dyConsumed;
+					unconsumedY = -dyConsumed;
 				}
 			}
 			if (unconsumedX != 0 || unconsumedY != 0) {
-				this.setScrollState(SCROLL_STATE_DRAGGING);
 				this.scrollByInternal(unconsumedX, unconsumedY, this.consumed, this.unconsumed);
 				consumed[0] -= this.unconsumed[0];
 				consumed[1] -= this.unconsumed[1];
 			}
 			if (DEBUG) {
-				Log.e(TAG, "onNestedPreScrollB consumedY " + consumed[1] + " => " + mParentScrollConsumed[1]);
+				Log.e(TAG, "onNestedPreScroll consumedY " + consumed[1] + " => " + mParentScrollConsumed[1]);
 			}
 		}
+
 		// Now let our nested parent consume the leftovers
 		final int[] parentConsumed = this.mParentScrollConsumed;
 		if (this.dispatchNestedPreScroll(dx - consumed[0], dy - consumed[1], parentConsumed, null)) {

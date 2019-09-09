@@ -20,9 +20,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 
 	private boolean mIsNotifying;
 	private boolean mIsRefreshing;
-	private boolean mIsTempStopNestedScroll;
 	private boolean mIsFinishRollbackInProgress;
-	private boolean mIsFinishRollbackInDragging;
 
 	private RefreshLayout.OnRefreshListener mOnRefreshListener;
 	private RefreshLayout.OnDragViewOwner mOnDragViewOwner;
@@ -31,21 +29,32 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 
 	@Override
 	public boolean shouldStartNestedScroll() {
-		if (this.mDragView == null) {
-			this.mDragView = this.getDragView();
+		this.ensureDragView();
+		if (this.mDragView == null
+				|| this.mIsNotifying) {
+			return false;
 		}
-		return this.mDragView != null && !this.mIsNotifying && !this.mIsTempStopNestedScroll;
+		if (this.mIsFinishRollbackInProgress) {
+			// stop nested scroll
+			if (this.canChildScroll(this.getNestedScrollingHelper().getScrollDirection())) {
+				return false;
+			}
+			if (NestedScrollingHelper.SCROLL_STATE_DRAGGING == this.getNestedScrollingHelper().getScrollState()) {
+				return true;
+			}
+			return false;
+		}
+		return true;
 	}
 
 	@Override
 	public boolean canChildScroll(int direction) {
-		if (this.shouldStartNestedScroll()) {
-			if (RefreshLayout.VERTICAL == this.getOrientation()) {
-				return this.mDragView.canScrollVertically(direction);
-			}
+		if (RefreshLayout.HORIZONTAL == this.getOrientation()) {
 			return this.mDragView.canScrollHorizontally(direction);
+		} else if (RefreshLayout.VERTICAL == this.getOrientation()) {
+			return this.mDragView.canScrollVertically(direction);
 		}
-		return false;
+		return true;
 	}
 
 	@Override
@@ -91,10 +100,9 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 
 	@Override
 	public void onScrollStateChanged(@NonNull NestedScrollingHelper helper, int scrollState) {
-		final int mScrollDirection = helper.getScrollDirection();
-
 		if (NestedScrollingHelper.SCROLL_STATE_IDLE == scrollState) {
 			final float mScrollOffset = helper.getScrollOffset();
+			final int mScrollDirection = helper.getScrollDirection();
 			final int mPreScrollDistance = this.getPreScrollDistance2(mScrollDirection);
 
 			if (this.mIsRefreshing) {
@@ -117,21 +125,9 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 				} else if (Math.abs(mScrollOffset) != 0) {
 					this.performRefreshing(false, false);
 				} else {
-					this.mIsTempStopNestedScroll = false;
 					this.mIsFinishRollbackInProgress = false;
-					this.mIsFinishRollbackInDragging = false;
 					this.mHeaderContainer.setVisibility(View.GONE);
 					this.mFooterContainer.setVisibility(View.GONE);
-				}
-			}
-		} else {
-			if (this.mIsFinishRollbackInProgress) {
-				if (this.canChildScroll(mScrollDirection)) {
-					this.mIsTempStopNestedScroll = true;
-				} else {
-					if (!this.mIsFinishRollbackInDragging) {
-						this.mIsFinishRollbackInProgress = false;
-					}
 				}
 			}
 		}
@@ -183,6 +179,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 	}
 
 	private void performRefreshing(boolean refreshing, boolean notifying, long delayMillis) {
+		this.ensureDragView();
 		int direction = this.getNestedScrollingHelper().getScrollDirection();
 
 		if (this.mIsRefreshing != refreshing) {
@@ -197,22 +194,6 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 			} else {
 				this.mIsFinishRollbackInProgress = true;
 				this.dispatchOnRefreshed(direction);
-
-				if (NestedScrollingHelper.SCROLL_STATE_IDLE != this.getNestedScrollingHelper().getScrollState()) {
-					if (this.canChildScroll(direction)) {
-						this.mIsTempStopNestedScroll = true;
-					} else {
-						this.mIsFinishRollbackInDragging = true;
-						this.getDragRelativeLayout().postDelayed(new Runnable() {
-							@Override
-							public void run() {
-								mHeaderContainer.setVisibility(View.GONE);
-								mFooterContainer.setVisibility(View.GONE);
-							}
-						}, delayMillis);
-						return;
-					}
-				}
 			}
 		}
 		if (refreshing) {
@@ -310,6 +291,12 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		this.mFooterScrollStyleMode = scrollStyleMode;
 	}
 
+	private void ensureDragView() {
+		if (this.mDragView == null) {
+			this.mDragView = this.getDragView();
+		}
+	}
+
 	private void requestLayoutParams() {
 		View preContainer = this.getDragRelativeLayout().findViewById(R.id.app_refresh_header_view_id);
 		if (preContainer != null) {
@@ -348,9 +335,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		final float mScrollOffsetScale = Math.abs(scrollOffset) / Math.max(Math.abs(mPreScrollDistance) * 1.F, 1.F);
 
 		if (direction < 0 && this.mRefreshMode.hasStartMode()) {
-			if (!this.mIsFinishRollbackInDragging) {
-				this.mHeaderContainer.setVisibility(View.VISIBLE);
-			}
+			this.mHeaderContainer.setVisibility(View.VISIBLE);
 			// If you want to use custom scrollStyle to addOnScrollListener
 			final int mHeaderLoadViewScrollOffset = this.getHeaderLoadViewScrollOffset(scrollOffset);
 			if (RefreshLayout.VERTICAL == this.getOrientation()) {
@@ -362,9 +347,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 				this.mHeaderLoadView.onRefreshPull(scrollOffset, mScrollOffsetScale);
 			}
 		} else if (direction > 0 && this.mRefreshMode.hasEndMode()) {
-			if (!this.mIsFinishRollbackInDragging) {
-				this.mFooterContainer.setVisibility(View.VISIBLE);
-			}
+			this.mFooterContainer.setVisibility(View.VISIBLE);
 			final int mFooterLoadViewScrollOffset = this.getFooterLoadViewScrollOffset(scrollOffset);
 			if (RefreshLayout.VERTICAL == this.getOrientation()) {
 				this.mFooterContainer.setTranslationY(mFooterLoadViewScrollOffset);

@@ -87,7 +87,6 @@ public abstract class PagerAdapter<VH extends PagerAdapter.ViewHolder> extends V
 
 	public abstract void onBindViewHolder(@NonNull VH holder, int position, @Nullable Object object);
 
-	@CallSuper
 	public int getItemViewType(int position) {
 		// NO-OP
 		return 0;

@@ -50,10 +50,14 @@ public abstract class FragmentPagerAdapter extends ViewPagerCompat.Adapter {
 
 	@Override
 	public void onDestroyItem(@NonNull ViewGroup container, @NonNull Object object, int position) {
+		Fragment fragment = (Fragment) object;
 		if (this.mCurTransaction == null) {
 			this.mCurTransaction = this.mFragmentManager.beginTransaction();
 		}
-		this.mCurTransaction.detach((Fragment) object);
+		this.mCurTransaction.detach(fragment);
+		if (fragment == this.mCurrentPrimaryFragment) {
+			this.mCurrentPrimaryFragment = null;
+		}
 	}
 
 	@Override

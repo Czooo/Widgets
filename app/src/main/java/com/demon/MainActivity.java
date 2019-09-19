@@ -175,6 +175,13 @@ public class MainActivity extends AppCompatActivity {
 						startActivity(new Intent(MainActivity.this, SwipeSideLayoutActivity.class));
 					}
 				});
+		this.findViewById(R.id.joinCalendarView)
+				.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						startActivity(new Intent(MainActivity.this, CalendarViewActivity.class));
+					}
+				});
 		this.findViewById(R.id.joinFlowLabelView)
 				.setOnClickListener(new View.OnClickListener() {
 					@Override

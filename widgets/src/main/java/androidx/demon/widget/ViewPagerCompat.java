@@ -535,7 +535,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		// Draw the margin drawable between pages if needed.
-		if (this.mPageMargin > 0 && this.mMarginDrawable != null && this.mPagePools.size() > 0 && this.mAdapter != null) {
+		if (this.mPageMargin > 0 && this.mMarginDrawable != null && this.mPagePool.size() > 0 && this.mAdapter != null) {
 			final boolean clipToPadding = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && this.getClipToPadding();
 			final int clientSize;
 			final int scrollOffset;
@@ -547,17 +547,17 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				clientSize = this.getClientWidth();
 			}
 			final float marginOffset = (float) this.mPageMargin / clientSize;
-			final int itemCount = this.mPagePools.size();
+			final int itemCount = this.mPagePool.size();
 
 			int nextIndex = 0;
-			Page page = this.mPagePools.get(0);
+			Page page = this.mPagePool.get(0);
 			final int firstPosition = page.position;
-			final int lastPosition = this.mPagePools.get(itemCount - 1).position;
+			final int lastPosition = this.mPagePool.get(itemCount - 1).position;
 
 			float offset = page.offset;
 			for (int position = firstPosition; position < lastPosition; position++) {
 				while (position > page.position && nextIndex < itemCount) {
-					page = this.mPagePools.get(++nextIndex);
+					page = this.mPagePool.get(++nextIndex);
 				}
 
 				final float nextPos;
@@ -1375,8 +1375,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 
 		if (!this.mIsScrollingLoop) {
 			// Only let the user target pages we have items for
-			final Page firstPage = this.mPagePools.get(0);
-			final Page lastPage = this.mPagePools.get(this.mPagePools.size() - 1);
+			final Page firstPage = this.mPagePool.get(0);
+			final Page lastPage = this.mPagePool.get(this.mPagePool.size() - 1);
 
 			if (firstPage.position != 0) {
 				startBound = firstPage.offset * clientSize;
@@ -1519,13 +1519,13 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				nextPagePosition = mCurrentScrollPosition + (int) (widthPageOffset + truncator);
 			}
 		}
-		if (this.mPagePools.size() > 0) {
+		if (this.mPagePool.size() > 0) {
 			// Only let the user target pages we have items for
 			if (this.mIsScrollingLoop) {
 				nextPagePosition = Math.max(this.mCurrentPosition - 1, Math.min(nextPagePosition, this.mCurrentPosition + 1));
 			} else {
-				final Page firstPage = this.mPagePools.get(0);
-				final Page lastPage = this.mPagePools.get(this.mPagePools.size() - 1);
+				final Page firstPage = this.mPagePool.get(0);
+				final Page lastPage = this.mPagePool.get(this.mPagePool.size() - 1);
 				nextPagePosition = Math.max(firstPage.position, Math.min(nextPagePosition, lastPage.position));
 			}
 		}
@@ -1615,14 +1615,14 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			this.mAdapter.setViewPagerObserver(null);
 			this.mAdapter.onDetachedFromWindow(this);
 			this.mAdapter.onStartUpdate(this);
-			for (int index = 0; index < this.mPagePools.size(); index++) {
+			for (int index = 0; index < this.mPagePool.size(); index++) {
 				this.performOnRemovePage(index);
 				index--;
 			}
 			this.mAdapter.onFinishUpdate(this);
 			this.removeNonDecorViews();
 			this.mCurrentPosition = 0;
-			this.mPagePools.clear();
+			this.mPagePool.clear();
 			this.scrollTo(0, 0);
 		}
 
@@ -1698,7 +1698,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	}
 
 	public void setAllowUserScrollable(boolean allowUserScrollable) {
-		if(this.mIsAllowUserScrollable != allowUserScrollable) {
+		if (this.mIsAllowUserScrollable != allowUserScrollable) {
 			this.mIsAllowUserScrollable = allowUserScrollable;
 			if (!this.mIsAllowUserScrollable) {
 				final boolean wasFirstLayout = this.mFirstLayout;
@@ -1816,7 +1816,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		final int mClientWidth = this.getClientWidth();
 		final int mClientHeight = this.getClientHeight();
 
-		if (((VERTICAL == this.mOrientation && oldHeight > 0) || (HORIZONTAL == this.mOrientation && oldWidth > 0)) && !this.mPagePools.isEmpty()) {
+		if (((VERTICAL == this.mOrientation && oldHeight > 0) || (HORIZONTAL == this.mOrientation && oldWidth > 0)) && !this.mPagePool.isEmpty()) {
 			if (!this.mScroller.isFinished()) {
 				if (VERTICAL == this.mOrientation) {
 					this.mScroller.setFinalY(this.mCurrentPosition * mClientHeight);
@@ -1950,15 +1950,15 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			this.setScrollingCacheEnabled(false);
 			return;
 		}
-		if (!always && this.mCurrentPosition == position && this.mPagePools.size() != 0) {
+		if (!always && this.mCurrentPosition == position && this.mPagePool.size() != 0) {
 			this.setScrollingCacheEnabled(false);
 			return;
 		}
 
 		final int pageLimit = this.mOffscreenPageLimit;
 		if (position > (this.mCurrentPosition + pageLimit) || position < (this.mCurrentPosition - pageLimit)) {
-			for (int index = 0; index < this.mPagePools.size(); index++) {
-				this.mPagePools.get(index).scrolling = true;
+			for (int index = 0; index < this.mPagePool.size(); index++) {
+				this.mPagePool.get(index).scrolling = true;
 			}
 		}
 		final boolean dispatchSelected = this.mCurrentPosition != position;
@@ -2112,7 +2112,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			}
 		}
 		this.mPopulatePending = false;
-		for (Page page : this.mPagePools) {
+		for (Page page : this.mPagePool) {
 			if (page.scrolling) {
 				needPopulate = true;
 				page.scrolling = false;
@@ -2128,7 +2128,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	}
 
 	private boolean pageScrolled(int x, int y) {
-		if (this.mPagePools.size() == 0) {
+		if (this.mPagePool.size() == 0) {
 			if (this.mFirstLayout) {
 				return false;
 			}
@@ -2282,7 +2282,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	private ArrayList<OnPageChangeListener> mOnPageChangeListeners;
 	private ArrayList<OnAdapterChangeListener> mOnAdapterChangeListeners;
 	private final Page mTempPage = new Page();
-	private final ArrayList<Page> mPagePools = new ArrayList<>();
+	private final ArrayList<Page> mPagePool = new ArrayList<>();
 	private final ArrayList<View> mDrawingOrderedChilds = new ArrayList<>();
 	private final ViewPositionComparator sViewPositionComparator = new ViewPositionComparator();
 	private final PagePositionComparator sPagePositionComparator = new PagePositionComparator();
@@ -2290,7 +2290,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	void dataSetChanged() {
 		// This method only gets called if our observer is attached, so mAdapter is non-null.
 		final int itemCount = this.mAdapter.getItemCount();
-		boolean needPopulate = this.mPagePools.size() < this.mOffscreenPageLimit * 2 + 1 && this.mPagePools.size() < itemCount;
+		boolean needPopulate = this.mPagePool.size() < this.mOffscreenPageLimit * 2 + 1 && this.mPagePool.size() < itemCount;
 
 		if (this.mExpectedItemCount != itemCount) {
 			this.mExpectedItemCount = itemCount;
@@ -2304,8 +2304,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		}
 
 		boolean isUpdating = false;
-		for (int index = 0; index < this.mPagePools.size(); index++) {
-			final Page page = this.mPagePools.get(index);
+		for (int index = 0; index < this.mPagePool.size(); index++) {
+			final Page page = this.mPagePool.get(index);
 			final int newPosition = this.mAdapter.getItemPosition(this, page.object);
 
 			if (newPosition == Adapter.POSITION_UNCHANGED) {
@@ -2313,7 +2313,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			}
 
 			if (newPosition == Adapter.POSITION_NONE) {
-				this.mPagePools.remove(index);
+				this.mPagePool.remove(index);
 				index--;
 
 				if (!isUpdating) {
@@ -2343,7 +2343,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		if (isUpdating) {
 			this.mAdapter.onFinishUpdate(this);
 		}
-		Collections.sort(this.mPagePools, this.sPagePositionComparator);
+		Collections.sort(this.mPagePool, this.sPagePositionComparator);
 
 		if (needPopulate) {
 			// Reset our known page widths; populate will recompute them.
@@ -2403,8 +2403,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 
 		int currentIndex;
 		Page currentPage = null;
-		for (currentIndex = 0; currentIndex < this.mPagePools.size(); currentIndex++) {
-			final Page page = this.mPagePools.get(currentIndex);
+		for (currentIndex = 0; currentIndex < this.mPagePool.size(); currentIndex++) {
+			final Page page = this.mPagePool.get(currentIndex);
 			if (page.position >= currentPosition) {
 				if (page.position == currentPosition) {
 					currentPage = page;
@@ -2432,7 +2432,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 
 			// LEFT PAGES
 			while (nextPosition >= limitStartPosition || nextIndex >= 0) {
-				final Page page = nextIndex >= 0 ? this.mPagePools.get(nextIndex) : null;
+				final Page page = nextIndex >= 0 ? this.mPagePool.get(nextIndex) : null;
 				// add page to left
 				if (nextPosition >= limitStartPosition) {
 					if (page != null && page.position == nextPosition) {
@@ -2462,8 +2462,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			nextPosition = currentPosition + 1;
 			nextIndex = currentIndex + 1;
 			// RIGHT PAGES
-			while (nextPosition <= limitEndPosition || nextIndex < this.mPagePools.size()) {
-				final Page page = nextIndex < this.mPagePools.size() ? this.mPagePools.get(nextIndex) : null;
+			while (nextPosition <= limitEndPosition || nextIndex < this.mPagePool.size()) {
+				final Page page = nextIndex < this.mPagePool.size() ? this.mPagePool.get(nextIndex) : null;
 				// add page to right
 				if (nextPosition <= limitEndPosition) {
 					if (page == null || page.position != nextPosition) {
@@ -2538,12 +2538,12 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 
 	void calculatePageOffsets(@NonNull Page currentPage, @Nullable Page oldPage, int curIndex) {
 		if (DEBUG) {
-			for (Page page : this.mPagePools) {
+			for (Page page : this.mPagePool) {
 				Log.e(TAG, "calculatePageOffsets start : " + page.position + " => " + page.offset);
 			}
 		}
 
-		final int size = this.mPagePools.size();
+		final int size = this.mPagePool.size();
 		final int itemCount = this.mAdapter.getItemCount();
 		final int clientWidth = this.getClientWidth();
 		final int clientHeight = this.getClientHeight();
@@ -2565,9 +2565,9 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			if (oldPosition < nowPosition) {
 				offset = oldPage.offset + oldPage.weight + marginOffset;
 				for (int position = oldPosition + 1, nextIndex = 0; position <= nowPosition && nextIndex < size; position++) {
-					Page page = this.mPagePools.get(nextIndex);
+					Page page = this.mPagePool.get(nextIndex);
 					while (position > page.position && nextIndex < size - 1) {
-						page = this.mPagePools.get(++nextIndex);
+						page = this.mPagePool.get(++nextIndex);
 					}
 					while (position < page.position) {
 						offset += this.mAdapter.getPageWeight(this.adapterPositionForPosition(position)) + marginOffset;
@@ -2579,9 +2579,9 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			} else if (oldPosition > nowPosition) {
 				offset = oldPage.offset;
 				for (int position = oldPosition - 1, nextIndex = size - 1; position >= nowPosition && nextIndex >= 0; position--) {
-					Page page = this.mPagePools.get(nextIndex);
+					Page page = this.mPagePool.get(nextIndex);
 					while (position < page.position && nextIndex > 0) {
-						page = this.mPagePools.get(--nextIndex);
+						page = this.mPagePool.get(--nextIndex);
 					}
 					while (position > page.position) {
 						offset -= this.mAdapter.getPageWeight(this.adapterPositionForPosition(position)) + marginOffset;
@@ -2609,7 +2609,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		// LEFT PAGES OFFSET
 		offset = nowOffset;
 		for (int index = curIndex - 1, position = nowPosition - 1; index >= 0; index--, position--) {
-			Page page = this.mPagePools.get(index);
+			Page page = this.mPagePool.get(index);
 			while (position > page.position) {
 				offset -= this.mAdapter.getPageWeight(this.adapterPositionForPosition(position--)) + marginOffset;
 				position--;
@@ -2629,7 +2629,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		// RIGHT PAGES OFFSET
 		offset = nowOffset + currentPage.weight + marginOffset;
 		for (int index = curIndex + 1, position = nowPosition + 1; index < size; index++, position++) {
-			Page page = this.mPagePools.get(index);
+			Page page = this.mPagePool.get(index);
 			while (position < page.position) {
 				offset += this.mAdapter.getPageWeight(this.adapterPositionForPosition(position++)) + marginOffset;
 				position++;
@@ -2647,7 +2647,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			offset += page.weight + marginOffset;
 		}
 		if (DEBUG) {
-			for (Page page : this.mPagePools) {
+			for (Page page : this.mPagePool) {
 				Log.e(TAG, "calculatePageOffsets end : " + page.position + " => " + page.offset);
 			}
 			Log.e(TAG, "calculatePageOffsets Bound(" + mFirstOffset + "," + mLastOffset + ")");
@@ -2655,6 +2655,9 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	}
 
 	int adapterPositionForPosition(int position) {
+		if (this.mAdapter == null) {
+			return 0;
+		}
 		final int itemCount = this.mAdapter.getItemCount();
 		if (itemCount > 0) {
 			int adapterPosition = position;
@@ -2679,18 +2682,18 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		page.position = position;
 		page.weight = this.mAdapter.getPageWeight(adapterPosition);
 		page.object = this.mAdapter.onCreateItem(this, adapterPosition, position);
-		if (index < 0 || index >= this.mPagePools.size()) {
-			this.mPagePools.add(page);
+		if (index < 0 || index >= this.mPagePool.size()) {
+			this.mPagePool.add(page);
 		} else {
-			this.mPagePools.add(index, page);
+			this.mPagePool.add(index, page);
 		}
 		return page;
 	}
 
 	@Nullable
 	Page performOnRemovePage(int index) {
-		if (index >= 0 && index < this.mPagePools.size()) {
-			final Page page = this.mPagePools.remove(index);
+		if (index >= 0 && index < this.mPagePool.size()) {
+			final Page page = this.mPagePool.remove(index);
 			this.mAdapter.onDestroyItem(this, page.object, this.adapterPositionForPosition(page.position));
 			return page;
 		}
@@ -2699,8 +2702,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 
 	@Nullable
 	Page getPagerForChild(@NonNull View child) {
-		for (int index = 0; index < this.mPagePools.size(); index++) {
-			final Page page = this.mPagePools.get(index);
+		for (int index = 0; index < this.mPagePool.size(); index++) {
+			final Page page = this.mPagePool.get(index);
 			if (this.mAdapter.isViewFromObject(child, page.object)) {
 				return page;
 			}
@@ -2722,8 +2725,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 
 	@Nullable
 	Page getPagerForPosition(int position) {
-		for (int index = 0; index < this.mPagePools.size(); index++) {
-			final Page page = this.mPagePools.get(index);
+		for (int index = 0; index < this.mPagePool.size(); index++) {
+			final Page page = this.mPagePool.get(index);
 			if (page.position == position) {
 				return page;
 			}
@@ -2747,15 +2750,15 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			scrollOffset = mClientWidth > 0 ? mScrollX / mClientWidth : 0;
 		}
 		if (DEBUG) {
-			Log.e(TAG, "ScrollOffset : " + scrollOffset + " ==> Scroll(" + mScrollX + "," + mScrollY + ") ==> ChildCount : " + mPagePools.size());
+			Log.e(TAG, "ScrollOffset : " + scrollOffset + " ==> Scroll(" + mScrollX + "," + mScrollY + ") ==> ChildCount : " + mPagePool.size());
 		}
 		int lastPosition = -1;
 		float lastOffset = 0.f;
 		float lastPageWeight = 0.f;
 		boolean shouldFirst = true;
 		Page lastPage = null;
-		for (int index = 0; index < this.mPagePools.size(); index++) {
-			Page page = this.mPagePools.get(index);
+		for (int index = 0; index < this.mPagePool.size(); index++) {
+			Page page = this.mPagePool.get(index);
 
 			if (!shouldFirst && page.position != lastPosition + 1) {
 				// Create a synthetic item for a missing page.
@@ -2773,7 +2776,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				Log.e(TAG, "Index : " + index + " ==> [" + leftBound + "," + rightBound + ") ==> position : " + page.position + " ==> curPosition : " + mCurrentPosition);
 			}
 			if (shouldFirst || scrollOffset >= leftBound) {
-				if (scrollOffset < rightBound || index == this.mPagePools.size() - 1) {
+				if (scrollOffset < rightBound || index == this.mPagePool.size() - 1) {
 					return page;
 				}
 			} else {
@@ -2916,7 +2919,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		}
 
 		@CallSuper
-		public void onRestoreInstanceState(@Nullable Bundle saveInstanceState, @Nullable ClassLoader classLoader) {
+		public void onRestoreInstanceState(@NonNull Bundle saveInstanceState, @NonNull ClassLoader classLoader) {
 			// NO-OP
 		}
 

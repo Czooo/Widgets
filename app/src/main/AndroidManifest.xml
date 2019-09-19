@@ -37,6 +37,7 @@
             android:name=".SwipeSideLayoutActivity"
             android:theme="@style/SwipeSideActivityTheme"/>
         <activity android:name=".FlowLabelViewActivity"/>
+        <activity android:name=".CalendarViewActivity"/>
     </application>
 
 </manifest>

@@ -66,7 +66,7 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 	}
 
 	@Override
-	public void onIndicatorAttachedToWindow(@NonNull BannerLayout bannerLayout, @NonNull ViewPagerCompat.Adapter adapter) {
+	public void onAttachedToBannerLayout(@NonNull BannerLayout bannerLayout) {
 		if (this.mOnIndicatorChangeListener == null) {
 			this.mOnIndicatorChangeListener = new OnIndicatorChangeListener();
 		}
@@ -75,6 +75,7 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 		if (this.mAdapterDataSetObserver == null) {
 			this.mAdapterDataSetObserver = new AdapterDataSetObserver();
 		}
+		ViewPagerCompat.Adapter adapter = bannerLayout.getAdapter();
 		adapter.registerDataSetObserver(this.mAdapterDataSetObserver);
 
 		this.mBannerAdapter = adapter;
@@ -85,10 +86,11 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 	}
 
 	@Override
-	public void onIndicatorDetachedFromWindow(@NonNull BannerLayout bannerLayout, @Nullable ViewPagerCompat.Adapter adapter) {
+	public void onDetachedFromBannerLayout(@NonNull BannerLayout bannerLayout) {
 		if (this.mOnIndicatorChangeListener != null) {
 			bannerLayout.removeOnPageChangeListener(this.mOnIndicatorChangeListener);
 		}
+		ViewPagerCompat.Adapter adapter = bannerLayout.getAdapter();
 		if (adapter != null && this.mAdapterDataSetObserver != null) {
 			adapter.unregisterDataSetObserver(this.mAdapterDataSetObserver);
 		}

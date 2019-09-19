@@ -21,9 +21,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatImageView;
+import androidx.demon.widget.BannerLayout;
+import androidx.demon.widget.IndicatorView;
 import androidx.demon.widget.NineGridView;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
+import androidx.demon.widget.adapter.PagerAdapter;
+import androidx.demon.widget.transformers.HorDepthPageTransformer;
 import androidx.recyclerview.widget.RecyclerView;
 
 /**
@@ -59,13 +63,79 @@ public class NineGridViewActivity extends AppCompatActivity {
 			@Override
 			public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 				LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-				View view = inflater.inflate(R.layout.item_comment_layout, parent, false);
-				return new RecyclerView.ViewHolder(view) {
+				if (1 == viewType) {
+					return new RecyclerView.ViewHolder(inflater.inflate(R.layout.item_header_banner_layout, parent, false)) {
+					};
+				}
+				return new RecyclerView.ViewHolder(inflater.inflate(R.layout.item_comment_layout, parent, false)) {
 				};
 			}
 
 			@Override
 			public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+				if (0 == position) {
+					final IndicatorView mIndicatorView = holder.itemView.findViewById(R.id.indicatorView);
+					final BannerLayout mBannerLayout = holder.itemView.findViewById(R.id.bannerLayout);
+
+					if (mBannerLayout.getAdapter() != null) {
+						return;
+					}
+
+					final ArrayList<String> data = new ArrayList<>();
+					data.add("http://img0.imgtn.bdimg.com/it/u=3106526341,3733396167&fm=26&gp=0.jpg");
+					data.add("http://img1.imgtn.bdimg.com/it/u=795421968,2817681607&fm=11&gp=0.jpg");
+					data.add("http://img0.imgtn.bdimg.com/it/u=1732553485,3379133703&fm=26&gp=0.jpg");
+					data.add("http://img0.imgtn.bdimg.com/it/u=3043400348,2388911000&fm=15&gp=0.jpg");
+					final PagerAdapter<PagerAdapter.ViewHolder> mAdapter = new PagerAdapter<PagerAdapter.ViewHolder>() {
+
+						@Override
+						public int getItemCount() {
+							return data.size();
+						}
+
+						@NonNull
+						@Override
+						public PagerAdapter.ViewHolder onCreateViewHolder(@NonNull LayoutInflater inflater, @NonNull ViewGroup container, int itemViewType) {
+							final View itemView = inflater.inflate(R.layout.item_banner_layout, container, false);
+							return new ViewHolder(itemView) {
+							};
+						}
+
+						@Override
+						@SuppressLint("CheckResult")
+						public void onBindViewHolder(@NonNull ViewHolder holder, int position, @Nullable Object object) {
+							final AppCompatImageView imageView = holder.getItemView().findViewById(R.id.icon);
+							RequestOptions options = new RequestOptions();
+							options.error(new ColorDrawable(Color.BLACK));
+
+							Glide.with(imageView)
+									.load(data.get(position))
+									.apply(options)
+									.into(imageView);
+						}
+					};
+					// 自动管理生命周期
+					mBannerLayout.setLifecycleOwner(NineGridViewActivity.this);
+					// 滚动方向
+					mBannerLayout.setScrollDirection(BannerLayout.SCROLL_DIRECTION_START);
+					// 滚动动画
+					mBannerLayout.setPageTransformer(new HorDepthPageTransformer());
+					// 指示器
+					mBannerLayout.setIndicator(mIndicatorView);
+					// 用户手势操作
+					mBannerLayout.setAllowUserScrollable(true);
+					// 播放间隔时间：毫秒
+					mBannerLayout.setAutoPlayDelayMillis(2500);
+					// 控件滚动间隔时间：毫秒
+					mBannerLayout.setScrollingDuration(600);
+					// 自动循环播放
+					mBannerLayout.setAutoPlaying(true);
+					// 资源适配器
+					mBannerLayout.setAdapter(mAdapter);
+					// 开始循环播放
+					mBannerLayout.startPlay();
+					return;
+				}
 				TextView mTextView = holder.itemView.findViewById(R.id.contentTextView);
 				mTextView.setText("外包来了 外包来了 找技术空余时间做包上运用市场(百度 小米 华为  小米 运用宝  魅族 OPPO  VIVO 联想 360  等等)");
 
@@ -92,8 +162,16 @@ public class NineGridViewActivity extends AppCompatActivity {
 			}
 
 			@Override
+			public int getItemViewType(int position) {
+				if (position == 0) {
+					return 1;
+				}
+				return super.getItemViewType(position);
+			}
+
+			@Override
 			public int getItemCount() {
-				return 20;
+				return 21;
 			}
 		};
 		final RecyclerView mRecyclerView = this.findViewById(R.id.recyclerView);
@@ -108,7 +186,7 @@ public class NineGridViewActivity extends AppCompatActivity {
 		private final ArrayList<String> data = new ArrayList<>();
 
 		Adapter(int position) {
-			this.position = position;
+			this.position = position - 1;
 			final ArrayList<String> data = new ArrayList<>();
 			data.add("http://img0.imgtn.bdimg.com/it/u=3106526341,3733396167&fm=26&gp=0.jpg");
 			data.add("http://img1.imgtn.bdimg.com/it/u=795421968,2817681607&fm=11&gp=0.jpg");

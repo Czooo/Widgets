@@ -4,11 +4,12 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.RelativeLayout;
 
 import java.lang.annotation.Retention;
@@ -17,6 +18,7 @@ import java.lang.annotation.RetentionPolicy;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.customview.view.AbsSavedState;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
@@ -26,7 +28,7 @@ import androidx.lifecycle.OnLifecycleEvent;
  * Author create by ok on 2019-07-14
  * Email : ok@163.com.
  */
-public class BannerLayout extends RelativeLayout implements LifecycleObserver, ViewTreeObserver.OnScrollChangedListener {
+public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 
 	private static final String TAG = "BannerView";
 	private static final boolean DEBUG = false;
@@ -90,6 +92,31 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 	}
 
 	@Override
+	protected Parcelable onSaveInstanceState() {
+		Parcelable superState = super.onSaveInstanceState();
+		SavedState savedState = new SavedState(superState);
+		savedState.mCurPosition = this.getCurrentItem();
+		if (DEBUG) {
+			Log.i(TAG, "[Banner, onSaveInstanceState] : " + savedState.mCurPosition);
+		}
+		return savedState;
+	}
+
+	@Override
+	protected void onRestoreInstanceState(Parcelable state) {
+		if (state instanceof SavedState) {
+			SavedState savedState = (SavedState) state;
+			super.onRestoreInstanceState(savedState.getSuperState());
+			this.setCurrentItem(savedState.mCurPosition, false);
+			if (DEBUG) {
+				Log.i(TAG, "[Banner, onRestoreInstanceState] : " + savedState.mCurPosition);
+			}
+			return;
+		}
+		super.onRestoreInstanceState(state);
+	}
+
+	@Override
 	public boolean dispatchTouchEvent(MotionEvent event) {
 		this.dispatchPlayTouchEvent(event);
 		return super.dispatchTouchEvent(event);
@@ -108,20 +135,18 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 		return super.onTouchEvent(event);
 	}
 
-	private boolean mIsDispatchTouchEvent;
-
 	private void dispatchPlayTouchEvent(MotionEvent event) {
 		if (this.mViewPagerCompat.isAllowUserScrollable()) {
 			if (this.mIsAutoPlaying) {
 				switch (event.getActionMasked()) {
 					case MotionEvent.ACTION_DOWN:
-						this.mIsDispatchTouchEvent = true;
+						this.mIsShouldStartPlaying = false;
 						this.stopPlay();
 						break;
 					case MotionEvent.ACTION_OUTSIDE:
 					case MotionEvent.ACTION_CANCEL:
 					case MotionEvent.ACTION_UP:
-						this.mIsDispatchTouchEvent = false;
+						this.mIsShouldStartPlaying = true;
 						this.startPlay();
 						break;
 				}
@@ -134,16 +159,12 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 	@Override
 	protected void onAttachedToWindow() {
 		super.onAttachedToWindow();
-		this.getViewTreeObserver()
-				.addOnScrollChangedListener(this);
 		this.startPlay();
 	}
 
 	@Override
 	protected void onDetachedFromWindow() {
 		super.onDetachedFromWindow();
-		this.getViewTreeObserver()
-				.removeOnScrollChangedListener(this);
 		this.stopPlay();
 	}
 
@@ -167,15 +188,6 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 		}
 	}
 
-	@Override
-	public void onScrollChanged() {
-		if (isLocalVisibleBound(this)) {
-			this.startPlay();
-		} else {
-			this.stopPlay();
-		}
-	}
-
 	public void setLifecycleOwner(@NonNull LifecycleOwner owner) {
 		this.setLifecycle(owner.getLifecycle());
 	}
@@ -187,6 +199,7 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 	@DirectionMode
 	private int mScrollDirection = SCROLL_DIRECTION_START;
 	private int mAutoPlayDelayMillis = DEFAULT_AUTO_PLAY_DELAY;
+	private boolean mIsShouldStartPlaying = true;
 	private boolean mIsIndicatorInited = false;
 	private boolean mIsAdapterInited = false;
 	private boolean mIsAutoPlaying = true;
@@ -200,13 +213,13 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 			return;
 		}
 		if (this.mIsIndicatorInited && this.mIndicator != null) {
-			this.mIndicator.onIndicatorDetachedFromWindow(this, mAdapter);
+			this.mIndicator.onDetachedFromBannerLayout(this);
 			this.mIsIndicatorInited = false;
 		}
 		this.mViewPagerCompat.setAdapter(adapter);
 		this.mIsAdapterInited = true;
 		if (!this.mIsIndicatorInited && this.mIndicator != null) {
-			this.mIndicator.onIndicatorAttachedToWindow(this, adapter);
+			this.mIndicator.onAttachedToBannerLayout(this);
 			this.mIsIndicatorInited = true;
 		}
 	}
@@ -268,12 +281,12 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 	public void setIndicator(@NonNull Indicator indicator) {
 		final ViewPagerCompat.Adapter mAdapter = this.getAdapter();
 		if (this.mIsIndicatorInited && this.mIndicator != null) {
-			this.mIndicator.onIndicatorDetachedFromWindow(this, mAdapter);
+			this.mIndicator.onDetachedFromBannerLayout(this);
 			this.mIsIndicatorInited = false;
 		}
 		this.mIndicator = indicator;
 		if (!this.mIsIndicatorInited && mAdapter != null) {
-			this.mIndicator.onIndicatorAttachedToWindow(this, mAdapter);
+			this.mIndicator.onAttachedToBannerLayout(this);
 			this.mIsIndicatorInited = true;
 		}
 	}
@@ -289,6 +302,10 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 
 	public void setAutoPlayDelayMillis(int delayMillis) {
 		this.mAutoPlayDelayMillis = delayMillis;
+	}
+
+	public boolean isPlaying() {
+		return this.mIsPlaying;
 	}
 
 	public boolean isAutoPlaying() {
@@ -316,14 +333,15 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 		if (this.mIsPlaying) {
 			return;
 		}
-		if (this.mIsAdapterInited
-				&& !this.mIsDispatchTouchEvent
-				&& isLocalVisibleBound(this)) {
+		if (this.isEnabled()
+				&& this.isShown()
+				&& this.mIsAdapterInited
+				&& this.mIsShouldStartPlaying) {
 			this.mIsPlaying = true;
+
 			if (this.mPlayTask == null) {
 				this.mPlayTask = new PlayTask();
 			}
-			this.removeCallbacks(this.mPlayTask);
 			this.postDelayed(this.mPlayTask, this.mAutoPlayDelayMillis);
 		}
 		if (DEBUG) {
@@ -334,46 +352,34 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 	@OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
 	public synchronized void stopPlay() {
 		if (this.mIsPlaying) {
+			this.mIsPlaying = false;
+
 			if (this.mPlayTask != null) {
 				this.removeCallbacks(this.mPlayTask);
-				this.mPlayTask = null;
 			}
-			this.mIsPlaying = false;
 		}
 		if (DEBUG) {
 			Log.i(TAG, "[Banner, StopPlay] : " + this.mIsPlaying);
 		}
 	}
 
-	public boolean isPlaying() {
-		return this.mIsPlaying;
-	}
-
 	@OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
 	public synchronized void recycled() {
 		this.stopPlay();
+		this.mPlayTask = null;
 		this.mIsPlaying = false;
 		this.mIsAutoPlaying = false;
 	}
 
-	private synchronized boolean performNextPlay() {
-		if (this.mIsPlaying && this.mIsAutoPlaying) {
+	private synchronized boolean nextPlay() {
+		if (this.mIsPlaying) {
 			if ((SCROLL_DIRECTION_START == this.mScrollDirection && this.mViewPagerCompat.pageEnd())
 					|| (SCROLL_DIRECTION_END == this.mScrollDirection && this.mViewPagerCompat.pageStart())) {
-				return true;
+				return this.mIsAutoPlaying;
 			}
 		}
 		this.stopPlay();
 		return false;
-	}
-
-	private static boolean isLocalVisibleBound(@NonNull View view) {
-		final Rect mRect = new Rect();
-		view.getLocalVisibleRect(mRect);
-		return view.isEnabled()
-				&& view.isShown()
-				&& (view.getParent() != null)
-				&& (!(mRect.top < 0 || mRect.bottom > view.getBottom()));
 	}
 
 	final class PlayTask implements Runnable {
@@ -391,19 +397,68 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver, V
 		 */
 		@Override
 		public void run() {
-			if (BannerLayout.this.performNextPlay()) {
+			if (BannerLayout.this.nextPlay()) {
 				if (DEBUG) {
 					Log.i(TAG, "[Banner, Playing] : " + BannerLayout.this.getCurrentItem());
 				}
-				BannerLayout.this.postDelayed(this, mAutoPlayDelayMillis);
+				BannerLayout.this.postDelayed(this, BannerLayout.this.mAutoPlayDelayMillis);
 			}
 		}
 	}
 
 	public interface Indicator {
 
-		void onIndicatorAttachedToWindow(@NonNull BannerLayout bannerLayout, @NonNull ViewPagerCompat.Adapter adapter);
+		void onAttachedToBannerLayout(@NonNull BannerLayout bannerLayout);
 
-		void onIndicatorDetachedFromWindow(@NonNull BannerLayout bannerLayout, @Nullable ViewPagerCompat.Adapter adapter);
+		void onDetachedFromBannerLayout(@NonNull BannerLayout bannerLayout);
+	}
+
+	public static class SavedState extends AbsSavedState {
+
+		private int mCurPosition;
+		private Parcelable mSuperState;
+
+		SavedState(Parcel source) {
+			super(source);
+		}
+
+		SavedState(Parcel source, ClassLoader loader) {
+			super(source, loader);
+			if (loader == null) {
+				loader = getClass().getClassLoader();
+			}
+			this.mCurPosition = source.readInt();
+			this.mSuperState = source.readParcelable(loader);
+		}
+
+		SavedState(Parcelable superState) {
+			super(superState);
+			this.mSuperState = superState;
+		}
+
+		@Override
+		public void writeToParcel(Parcel dest, int flags) {
+			super.writeToParcel(dest, flags);
+			dest.writeInt(this.mCurPosition);
+			dest.writeParcelable(this.mSuperState, flags);
+		}
+
+		public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.ClassLoaderCreator<SavedState>() {
+
+			@Override
+			public SavedState createFromParcel(Parcel in) {
+				return new SavedState(in, null);
+			}
+
+			@Override
+			public SavedState createFromParcel(Parcel source, ClassLoader loader) {
+				return new SavedState(source, loader);
+			}
+
+			@Override
+			public SavedState[] newArray(int size) {
+				return new SavedState[size];
+			}
+		};
 	}
 }

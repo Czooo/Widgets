@@ -4,18 +4,19 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.util.ArrayList;
 
-import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.customview.view.AbsSavedState;
@@ -25,27 +26,30 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.OnLifecycleEvent;
 
 /**
- * Author create by ok on 2019-07-14
- * Email : ok@163.com.
+ * @Author create by Zoran on 2019-09-21
+ * @Email : 171905184@qq.com
+ * @Description :
  */
-public class BannerLayout extends RelativeLayout implements LifecycleObserver {
+public class BannerLayout extends RelativeLayout implements Handler.Callback, LifecycleObserver {
 
-	private static final String TAG = "BannerView";
-	private static final boolean DEBUG = false;
+	public static final int FLAG_STATE_NONE = 0;
+	public static final int FLAG_STATE_START = 1;
+	public static final int FLAG_STATE_PLAYING = 2;
+	public static final int FLAG_STATE_STOP = 3;
 
-	public static final int SCROLL_DIRECTION_START = 0;
+	public static final int PLAY_SCROLL_DIRECTION_START = 0;
+	public static final int PLAY_SCROLL_DIRECTION_END = 1;
 
-	public static final int SCROLL_DIRECTION_END = 1;
-
-	@IntDef({SCROLL_DIRECTION_START, SCROLL_DIRECTION_END})
-	@Retention(RetentionPolicy.SOURCE)
-	@interface DirectionMode {
-	}
-
-	private static final int DEFAULT_AUTO_PLAY_DELAY = 2000;
+	private static final int DEFAULT_AUTO_PLAY_DELAY = 2500;
 	private static final int DEFAULT_SCROLLING_DURATION = 600;
-
+	private ArrayList<OnPlayStateListener> mOnPlayStateListeners;
+	private ArrayList<PlayIndicator> mPlayIndicators;
 	private ViewPagerCompat mViewPagerCompat;
+	private Handler mPlayStateHandler;
+
+	private int mCurPlayState = FLAG_STATE_NONE;
+	private int mPlayScrollDirection = PLAY_SCROLL_DIRECTION_START;
+	private long mAutoPlayDelayMillis = DEFAULT_AUTO_PLAY_DELAY;
 
 	public BannerLayout(Context context) {
 		this(context, null);
@@ -61,9 +65,11 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 	}
 
 	private void performInit(@NonNull Context context, AttributeSet attrs) {
+		this.mPlayStateHandler = new Handler(Looper.getMainLooper(), this);
+
 		final TypedArray mTypedArray = context.obtainStyledAttributes(attrs, R.styleable.BannerLayout);
 		final int mOrientation = mTypedArray.getInt(R.styleable.BannerLayout_android_orientation, ViewPagerCompat.HORIZONTAL);
-		final int mScrollDirection = mTypedArray.getInt(R.styleable.BannerLayout_bannerScrollDirection, this.mScrollDirection);
+		final int mScrollDirection = mTypedArray.getInt(R.styleable.BannerLayout_bannerScrollDirection, this.mPlayScrollDirection);
 		final int mScrollingDuration = mTypedArray.getInteger(R.styleable.BannerLayout_bannerScrollingDuration, DEFAULT_SCROLLING_DURATION);
 		final int mAutoPlayDelayMillis = mTypedArray.getInteger(R.styleable.BannerLayout_bannerAutoPlayDelayMillis, DEFAULT_AUTO_PLAY_DELAY);
 		final int mOffscreenPageLimit = mTypedArray.getInteger(R.styleable.BannerLayout_bannerOffscreenPageLimit, 1);
@@ -87,8 +93,8 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 		this.mViewPagerCompat.setOrientation(mOrientation);
 		this.mViewPagerCompat.setScrollingLoop(true);
 		this.setAutoPlayDelayMillis(mAutoPlayDelayMillis);
-		this.setAutoPlaying(mShouldAutoPlaying);
-		this.setScrollDirection(mScrollDirection);
+		this.setAutoPlayFlags(mShouldAutoPlaying);
+		this.setPlayScrollDirection(mScrollDirection);
 	}
 
 	@Override
@@ -96,9 +102,6 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 		Parcelable superState = super.onSaveInstanceState();
 		SavedState savedState = new SavedState(superState);
 		savedState.mCurPosition = this.getCurrentItem();
-		if (DEBUG) {
-			Log.i(TAG, "[Banner, onSaveInstanceState] : " + savedState.mCurPosition);
-		}
 		return savedState;
 	}
 
@@ -108,9 +111,6 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 			SavedState savedState = (SavedState) state;
 			super.onRestoreInstanceState(savedState.getSuperState());
 			this.setCurrentItem(savedState.mCurPosition, false);
-			if (DEBUG) {
-				Log.i(TAG, "[Banner, onRestoreInstanceState] : " + savedState.mCurPosition);
-			}
 			return;
 		}
 		super.onRestoreInstanceState(state);
@@ -137,35 +137,19 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 
 	private void dispatchPlayTouchEvent(MotionEvent event) {
 		if (this.mViewPagerCompat.isAllowUserScrollable()) {
-			if (this.mIsAutoPlaying) {
+			if (this.mIsShouldAutoPlayFlags) {
 				switch (event.getActionMasked()) {
 					case MotionEvent.ACTION_DOWN:
-						this.mIsShouldStartPlaying = false;
 						this.stopPlay();
 						break;
 					case MotionEvent.ACTION_OUTSIDE:
 					case MotionEvent.ACTION_CANCEL:
 					case MotionEvent.ACTION_UP:
-						this.mIsShouldStartPlaying = true;
 						this.startPlay();
 						break;
 				}
-			} else {
-				this.stopPlay();
 			}
 		}
-	}
-
-	@Override
-	protected void onAttachedToWindow() {
-		super.onAttachedToWindow();
-		this.startPlay();
-	}
-
-	@Override
-	protected void onDetachedFromWindow() {
-		super.onDetachedFromWindow();
-		this.stopPlay();
 	}
 
 	@Override
@@ -188,6 +172,76 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 		}
 	}
 
+	private boolean mIsShouldAutoPlayFlags = true;
+	private boolean mIsShouldPlayInProgress = false;
+
+	@Override
+	public boolean handleMessage(Message msg) {
+		final boolean handle = this.setPlayState(msg.what);
+		// play state changed
+		if (handle) {
+			final int curPlayState = this.mCurPlayState;
+
+			if (FLAG_STATE_START == curPlayState) {
+				this.mIsShouldPlayInProgress = true;
+			} else if (FLAG_STATE_STOP == curPlayState) {
+				this.mIsShouldPlayInProgress = false;
+			} else if (FLAG_STATE_PLAYING == curPlayState) {
+				if (PLAY_SCROLL_DIRECTION_START == this.mPlayScrollDirection) {
+					this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageEnd();
+				} else if (PLAY_SCROLL_DIRECTION_END == this.mPlayScrollDirection) {
+					this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageStart();
+				}
+				this.mIsShouldPlayInProgress &= this.mIsShouldAutoPlayFlags;
+			}
+			if (this.mIsShouldPlayInProgress) {
+				this.nextPlay();
+			} else {
+				this.stopPlay();
+			}
+		}
+		return handle;
+	}
+
+	public synchronized void startPlay() {
+		if (!this.mIsShouldPlayInProgress) {
+			this.mPlayStateHandler.removeMessages(FLAG_STATE_STOP);
+			this.mPlayStateHandler.removeMessages(FLAG_STATE_PLAYING);
+			this.mPlayStateHandler.removeMessages(FLAG_STATE_START);
+			this.mPlayStateHandler.sendEmptyMessage(FLAG_STATE_START);
+		}
+	}
+
+	public synchronized void stopPlay() {
+		this.mPlayStateHandler.removeMessages(FLAG_STATE_START);
+		this.mPlayStateHandler.removeMessages(FLAG_STATE_PLAYING);
+		this.mPlayStateHandler.removeMessages(FLAG_STATE_STOP);
+		this.mPlayStateHandler.sendEmptyMessage(FLAG_STATE_STOP);
+	}
+
+	private synchronized void nextPlay() {
+		this.mPlayStateHandler.removeMessages(FLAG_STATE_START);
+		this.mPlayStateHandler.removeMessages(FLAG_STATE_STOP);
+		this.mPlayStateHandler.removeMessages(FLAG_STATE_PLAYING);
+		this.mPlayStateHandler.sendEmptyMessageDelayed(FLAG_STATE_PLAYING, this.mAutoPlayDelayMillis);
+	}
+
+	public synchronized void recycled() {
+		this.mPlayStateHandler.removeCallbacksAndMessages(null);
+		this.mPlayStateHandler = null;
+	}
+
+	private boolean setPlayState(int playState) {
+		if (this.mCurPlayState != playState) {
+			this.mCurPlayState = playState;
+			return true;
+		}
+		if (FLAG_STATE_PLAYING == playState) {
+			return true;
+		}
+		return false;
+	}
+
 	public void setLifecycleOwner(@NonNull LifecycleOwner owner) {
 		this.setLifecycle(owner.getLifecycle());
 	}
@@ -196,32 +250,8 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 		lifecycle.addObserver(this);
 	}
 
-	@DirectionMode
-	private int mScrollDirection = SCROLL_DIRECTION_START;
-	private int mAutoPlayDelayMillis = DEFAULT_AUTO_PLAY_DELAY;
-	private boolean mIsShouldStartPlaying = true;
-	private boolean mIsIndicatorInited = false;
-	private boolean mIsAdapterInited = false;
-	private boolean mIsAutoPlaying = true;
-	private boolean mIsPlaying = false;
-	private PlayTask mPlayTask;
-	private Indicator mIndicator;
-
 	public void setAdapter(@NonNull ViewPagerCompat.Adapter adapter) {
-		final ViewPagerCompat.Adapter mAdapter = this.getAdapter();
-		if (mAdapter == adapter) {
-			return;
-		}
-		if (this.mIsIndicatorInited && this.mIndicator != null) {
-			this.mIndicator.onDetachedFromBannerLayout(this);
-			this.mIsIndicatorInited = false;
-		}
 		this.mViewPagerCompat.setAdapter(adapter);
-		this.mIsAdapterInited = true;
-		if (!this.mIsIndicatorInited && this.mIndicator != null) {
-			this.mIndicator.onAttachedToBannerLayout(this);
-			this.mIsIndicatorInited = true;
-		}
 	}
 
 	public void setOrientation(int orientation) {
@@ -272,48 +302,12 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 		this.mViewPagerCompat.removeOnPageChangeListener(listener);
 	}
 
-	public void setScrollDirection(@DirectionMode int direction) {
-		if (this.mScrollDirection != direction) {
-			this.mScrollDirection = direction;
-		}
+	public void addOnAdapterChangeListener(@NonNull ViewPagerCompat.OnAdapterChangeListener listener) {
+		this.mViewPagerCompat.addOnAdapterChangeListener(listener);
 	}
 
-	public void setIndicator(@NonNull Indicator indicator) {
-		final ViewPagerCompat.Adapter mAdapter = this.getAdapter();
-		if (this.mIsIndicatorInited && this.mIndicator != null) {
-			this.mIndicator.onDetachedFromBannerLayout(this);
-			this.mIsIndicatorInited = false;
-		}
-		this.mIndicator = indicator;
-		if (!this.mIsIndicatorInited && mAdapter != null) {
-			this.mIndicator.onAttachedToBannerLayout(this);
-			this.mIsIndicatorInited = true;
-		}
-	}
-
-	public void setAutoPlaying(boolean autoPlaying) {
-		if (this.mIsAutoPlaying != autoPlaying) {
-			this.mIsAutoPlaying = autoPlaying;
-			if (this.mIsAutoPlaying) {
-				this.startPlay();
-			}
-		}
-	}
-
-	public void setAutoPlayDelayMillis(int delayMillis) {
-		this.mAutoPlayDelayMillis = delayMillis;
-	}
-
-	public boolean isPlaying() {
-		return this.mIsPlaying;
-	}
-
-	public boolean isAutoPlaying() {
-		return this.mIsAutoPlaying;
-	}
-
-	public long getAutoPlayDelayMillis() {
-		return this.mAutoPlayDelayMillis;
+	public void removeOnAdapterChangeListener(@NonNull ViewPagerCompat.OnAdapterChangeListener listener) {
+		this.mViewPagerCompat.removeOnAdapterChangeListener(listener);
 	}
 
 	public int getCurrentItem() {
@@ -328,89 +322,130 @@ public class BannerLayout extends RelativeLayout implements LifecycleObserver {
 		return this.mViewPagerCompat;
 	}
 
-	@OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-	public synchronized void startPlay() {
-		if (this.mIsPlaying) {
-			return;
+	public void addPlayIndicator(@NonNull PlayIndicator playIndicator) {
+		if (this.mPlayIndicators == null) {
+			this.mPlayIndicators = new ArrayList<>();
 		}
-		if (this.isEnabled()
-				&& this.isShown()
-				&& this.mIsAdapterInited
-				&& this.mIsShouldStartPlaying) {
-			this.mIsPlaying = true;
+		if (this.mPlayIndicators.indexOf(playIndicator) == -1) {
+			this.mPlayIndicators.add(playIndicator);
+			// attachedToParent
+			playIndicator.onAttachedToParent(this);
+		}
+	}
 
-			if (this.mPlayTask == null) {
-				this.mPlayTask = new PlayTask();
-			}
-			this.postDelayed(this.mPlayTask, this.mAutoPlayDelayMillis);
+	public void removePlayIndicator(@NonNull PlayIndicator playIndicator) {
+		if (this.mPlayIndicators != null && this.mPlayIndicators.indexOf(playIndicator) != -1) {
+			this.mPlayIndicators.remove(playIndicator);
+			// detachedFromParent
+			playIndicator.onDetachedFromParent(this);
 		}
-		if (DEBUG) {
-			Log.i(TAG, "[Banner, StartPlay] : " + this.mIsPlaying);
+	}
+
+	public void setPlayScrollDirection(int direction) {
+		if (this.mPlayScrollDirection != direction) {
+			this.mPlayScrollDirection = direction;
+		}
+	}
+
+	public void setAutoPlayFlags(boolean flags) {
+		if (this.mIsShouldAutoPlayFlags != flags) {
+			this.mIsShouldAutoPlayFlags = flags;
+		}
+	}
+
+	public void setAutoPlayDelayMillis(int delayMillis) {
+		if (this.mAutoPlayDelayMillis != delayMillis) {
+			this.mAutoPlayDelayMillis = delayMillis;
+		}
+	}
+
+	public void addOnPlayStateListener(@NonNull OnPlayStateListener listener) {
+		if (this.mOnPlayStateListeners == null) {
+			this.mOnPlayStateListeners = new ArrayList<>();
+		}
+		this.mOnPlayStateListeners.add(listener);
+	}
+
+	public void removeOnPlayStateListener(@NonNull OnPlayStateListener listener) {
+		if (this.mOnPlayStateListeners != null) {
+			this.mOnPlayStateListeners.remove(listener);
+		}
+	}
+
+	public int getCurPlayState() {
+		return this.mCurPlayState;
+	}
+
+	public long getAutoPlayDelayMillis() {
+		return this.mAutoPlayDelayMillis;
+	}
+
+	public boolean isShouldAutoPlayFlags() {
+		return this.mIsShouldAutoPlayFlags;
+	}
+
+	public boolean isShouldPlayInProgress() {
+		return this.mIsShouldPlayInProgress;
+	}
+
+	@OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+	protected void onResume() {
+		this.startPlay();
+		if (this.mPlayIndicators != null) {
+			for (PlayIndicator indicator : this.mPlayIndicators) {
+				indicator.onResume();
+			}
 		}
 	}
 
 	@OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-	public synchronized void stopPlay() {
-		if (this.mIsPlaying) {
-			this.mIsPlaying = false;
-
-			if (this.mPlayTask != null) {
-				this.removeCallbacks(this.mPlayTask);
+	protected void onPause() {
+		this.stopPlay();
+		if (this.mPlayIndicators != null) {
+			for (PlayIndicator indicator : this.mPlayIndicators) {
+				indicator.onPause();
 			}
 		}
-		if (DEBUG) {
-			Log.i(TAG, "[Banner, StopPlay] : " + this.mIsPlaying);
+	}
+
+	@OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+	protected void onStop() {
+		this.stopPlay();
+		if (this.mPlayIndicators != null) {
+			for (PlayIndicator indicator : this.mPlayIndicators) {
+				indicator.onStop();
+			}
 		}
 	}
 
 	@OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-	public synchronized void recycled() {
-		this.stopPlay();
-		this.mPlayTask = null;
-		this.mIsPlaying = false;
-		this.mIsAutoPlaying = false;
-	}
-
-	private synchronized boolean nextPlay() {
-		if (this.mIsPlaying) {
-			if ((SCROLL_DIRECTION_START == this.mScrollDirection && this.mViewPagerCompat.pageEnd())
-					|| (SCROLL_DIRECTION_END == this.mScrollDirection && this.mViewPagerCompat.pageStart())) {
-				return this.mIsAutoPlaying;
+	protected void onDestroy() {
+		if (this.mPlayIndicators != null) {
+			for (PlayIndicator indicator : this.mPlayIndicators) {
+				indicator.onDestroy();
 			}
 		}
-		this.stopPlay();
-		return false;
+		this.recycled();
 	}
 
-	final class PlayTask implements Runnable {
+	public interface OnPlayStateListener {
 
-		/**
-		 * When an object implementing interface <code>Runnable</code> is used
-		 * to create a thread, starting the thread causes the object's
-		 * <code>run</code> method to be called in that separately executing
-		 * thread.
-		 * <p>
-		 * The general contract of the method <code>run</code> is that it may
-		 * take any action whatsoever.
-		 *
-		 * @see Thread#run()
-		 */
-		@Override
-		public void run() {
-			if (BannerLayout.this.nextPlay()) {
-				if (DEBUG) {
-					Log.i(TAG, "[Banner, Playing] : " + BannerLayout.this.getCurrentItem());
-				}
-				BannerLayout.this.postDelayed(this, BannerLayout.this.mAutoPlayDelayMillis);
-			}
-		}
+		void onPlayStateChanged(@NonNull BannerLayout container, int playState);
 	}
 
-	public interface Indicator {
+	public interface PlayIndicator {
 
-		void onAttachedToBannerLayout(@NonNull BannerLayout bannerLayout);
+		void onAttachedToParent(@NonNull ViewGroup container);
 
-		void onDetachedFromBannerLayout(@NonNull BannerLayout bannerLayout);
+		void onDetachedFromParent(@NonNull ViewGroup container);
+
+		void onResume();
+
+		void onPause();
+
+		void onStop();
+
+		void onDestroy();
 	}
 
 	public static class SavedState extends AbsSavedState {

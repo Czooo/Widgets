@@ -1,5 +1,6 @@
 package androidx.demon.widget.adapter;
 
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import androidx.demon.widget.cache.RecycledPool;
 public abstract class PagerAdapter<VH extends PagerAdapter.ViewHolder> extends ViewPagerCompat.Adapter {
 
 	private final RecycledPool<VH> mRecycledPool = new RecycledPool<>();
+	private final SparseArray<VH> mViewHolderPool = new SparseArray<>();
 	private OnItemClickListener mOnItemClickListener;
 	private OnItemLongClickListener mOnItemLongClickListener;
 
@@ -47,10 +49,12 @@ public abstract class PagerAdapter<VH extends PagerAdapter.ViewHolder> extends V
 			}
 			holder.position = position;
 			holder.itemViewType = itemViewType;
-			// add page in parent
 			container.addView(holder.getItemView());
-			this.onViewAttachedToWindow(container, (VH) holder);
-			this.onBindViewHolder((VH) holder, position, null);
+
+			final VH tempViewHolder = (VH) holder;
+			this.onViewAttachedToWindow(container, tempViewHolder);
+			this.onBindViewHolder(tempViewHolder, position, null);
+			this.mViewHolderPool.put(position, tempViewHolder);
 			return holder;
 		} finally {
 			TraceCompat.endSection();
@@ -63,6 +67,7 @@ public abstract class PagerAdapter<VH extends PagerAdapter.ViewHolder> extends V
 		container.removeView(holder.getItemView());
 		this.onViewDetachedFromWindow(container, holder);
 		this.mRecycledPool.putRecycled(holder.getItemViewType(), holder);
+		this.mViewHolderPool.remove(position);
 	}
 
 	@Override
@@ -120,6 +125,10 @@ public abstract class PagerAdapter<VH extends PagerAdapter.ViewHolder> extends V
 	@CallSuper
 	public void onPrimaryViewHolder(@NonNull ViewGroup container, @NonNull VH holder) {
 		// NO-OP
+	}
+
+	public final VH findViewHolderByPoition(int position) {
+		return this.mViewHolderPool.get(position);
 	}
 
 	public final RecycledPool<VH> getRecycledPool() {

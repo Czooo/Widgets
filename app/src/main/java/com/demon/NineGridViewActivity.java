@@ -117,11 +117,11 @@ public class NineGridViewActivity extends AppCompatActivity {
 					// 自动管理生命周期
 					mBannerLayout.setLifecycleOwner(NineGridViewActivity.this);
 					// 滚动方向
-					mBannerLayout.setScrollDirection(BannerLayout.SCROLL_DIRECTION_START);
+					mBannerLayout.setPlayScrollDirection(BannerLayout.PLAY_SCROLL_DIRECTION_START);
 					// 滚动动画
 					mBannerLayout.setPageTransformer(new HorDepthPageTransformer());
 					// 指示器
-					mBannerLayout.setIndicator(mIndicatorView);
+					mBannerLayout.addPlayIndicator(mIndicatorView);
 					// 用户手势操作
 					mBannerLayout.setAllowUserScrollable(true);
 					// 播放间隔时间：毫秒
@@ -129,7 +129,7 @@ public class NineGridViewActivity extends AppCompatActivity {
 					// 控件滚动间隔时间：毫秒
 					mBannerLayout.setScrollingDuration(600);
 					// 自动循环播放
-					mBannerLayout.setAutoPlaying(true);
+					mBannerLayout.setAutoPlayFlags(true);
 					// 资源适配器
 					mBannerLayout.setAdapter(mAdapter);
 					// 开始循环播放

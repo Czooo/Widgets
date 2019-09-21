@@ -17,26 +17,26 @@ import android.widget.RelativeLayout;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.AppCompatImageView;
 import androidx.demon.widget.cache.RecycledPool;
 
 /**
- * Author create by ok on 2019-07-14
- * Email : ok@163.com.
+ * @Author create by Zoran on 2019-09-21
+ * @Email : 171905184@qq.com
+ * @Description :
  */
-public class IndicatorView extends LinearLayout implements BannerLayout.Indicator {
+public class IndicatorView extends LinearLayout implements BannerLayout.PlayIndicator, ViewPagerCompat.OnAdapterChangeListener {
 
 	private final RecycledPool<View> mRecycledPool = new RecycledPool<>();
-	private OnIndicatorChangeListener mOnIndicatorChangeListener;
-
-	private IndicatorDataSetObserver mIndicatorDataSetObserver;
-	private Adapter mIndicatorAdapter;
-
-	private AdapterDataSetObserver mAdapterDataSetObserver;
-	private ViewPagerCompat.Adapter mBannerAdapter;
 
 	private float mIndicatorWeight = 0.f;
 	private int mIndicatorMargin = 8;
+	private int mCurrentItemPosition = -1;
+
+	private Adapter mIndicatorAdapter;
+	private ViewPagerCompat.Adapter mBannerAdapter;
+	private OnPageChangeListener mOnPageChangeListener;
+	private AdapterDataSetObserver mAdapterDataSetObserver;
+	private IndicatorDataSetObserver mIndicatorDataSetObserver;
 
 	public IndicatorView(Context context) {
 		this(context, null);
@@ -52,12 +52,14 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 	}
 
 	private void performInit(@NonNull Context context, AttributeSet attrs) {
+		this.setOrientation(HORIZONTAL);
+
 		final TypedArray mTypedArray = context.obtainStyledAttributes(attrs, R.styleable.IndicatorView);
 		this.mIndicatorWeight = mTypedArray.getFloat(R.styleable.IndicatorView_indicatorWeight, this.mIndicatorWeight);
 		this.mIndicatorMargin = mTypedArray.getDimensionPixelOffset(R.styleable.IndicatorView_indicatorMargin, this.mIndicatorMargin);
 		mTypedArray.recycle();
+		// set adapter ?
 		this.setAdapter(new SimpleAdapter(context, attrs));
-		this.setOrientation(HORIZONTAL);
 	}
 
 	@Override
@@ -66,37 +68,59 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 	}
 
 	@Override
-	public void onAttachedToBannerLayout(@NonNull BannerLayout bannerLayout) {
-		if (this.mOnIndicatorChangeListener == null) {
-			this.mOnIndicatorChangeListener = new OnIndicatorChangeListener();
+	public void onAttachedToParent(@NonNull ViewGroup container) {
+		final BannerLayout mBannerLayout = (BannerLayout) container;
+		if (this.mOnPageChangeListener == null) {
+			this.mOnPageChangeListener = new OnPageChangeListener();
 		}
-		bannerLayout.addOnPageChangeListener(this.mOnIndicatorChangeListener);
-
-		if (this.mAdapterDataSetObserver == null) {
-			this.mAdapterDataSetObserver = new AdapterDataSetObserver();
-		}
-		ViewPagerCompat.Adapter adapter = bannerLayout.getAdapter();
-		adapter.registerDataSetObserver(this.mAdapterDataSetObserver);
-
-		this.mBannerAdapter = adapter;
-		// update indicator
-		if (this.mIndicatorAdapter != null) {
-			this.mIndicatorAdapter.notifyDataSetChanged();
-		}
+		mBannerLayout.addOnPageChangeListener(this.mOnPageChangeListener);
+		this.dispatchAdapterChanged(null, mBannerLayout.getAdapter());
+		mBannerLayout.addOnAdapterChangeListener(this);
 	}
 
 	@Override
-	public void onDetachedFromBannerLayout(@NonNull BannerLayout bannerLayout) {
-		if (this.mOnIndicatorChangeListener != null) {
-			bannerLayout.removeOnPageChangeListener(this.mOnIndicatorChangeListener);
+	public void onDetachedFromParent(@NonNull ViewGroup container) {
+		final BannerLayout mBannerLayout = (BannerLayout) container;
+		if (this.mOnPageChangeListener != null) {
+			mBannerLayout.removeOnPageChangeListener(this.mOnPageChangeListener);
 		}
-		ViewPagerCompat.Adapter adapter = bannerLayout.getAdapter();
-		if (adapter != null && this.mAdapterDataSetObserver != null) {
-			adapter.unregisterDataSetObserver(this.mAdapterDataSetObserver);
-		}
+		mBannerLayout.removeOnAdapterChangeListener(this);
+		this.dispatchAdapterChanged(mBannerLayout.getAdapter(), null);
 		this.performIndicatorRecycled(false);
 		this.mCurrentItemPosition = -1;
 		this.mBannerAdapter = null;
+	}
+
+	@Override
+	public void onResume() {
+
+	}
+
+	@Override
+	public void onPause() {
+
+	}
+
+	@Override
+	public void onStop() {
+
+	}
+
+	@Override
+	public void onDestroy() {
+
+	}
+
+	/**
+	 * Called when the adapter for the given view pager has changed.
+	 *
+	 * @param container  ViewPagerCompat where the adapter change has happened
+	 * @param oldAdapter the previously set adapter
+	 * @param newAdapter the newly set adapter
+	 */
+	@Override
+	public void onAdapterChanged(@NonNull ViewPagerCompat container, @Nullable ViewPagerCompat.Adapter oldAdapter, @Nullable ViewPagerCompat.Adapter newAdapter) {
+		this.dispatchAdapterChanged(oldAdapter, newAdapter);
 	}
 
 	public void setIndicatorWeight(float weight) {
@@ -127,6 +151,14 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 		}
 	}
 
+	public float getIndicatorWeight() {
+		return this.mIndicatorWeight;
+	}
+
+	public int getmIndicatorMargin() {
+		return this.mIndicatorMargin;
+	}
+
 	public Adapter getAdapter() {
 		return this.mIndicatorAdapter;
 	}
@@ -146,7 +178,7 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 		for (int position = 0; position < mItemCount; position++) {
 			View mIndicatorView = this.mRecycledPool.getRecycled(0);
 			if (mIndicatorView == null) {
-				mIndicatorView = this.mIndicatorAdapter.onCreateIndicatorView(LayoutInflater.from(this.getContext()), this, position);
+				mIndicatorView = this.mIndicatorAdapter.onCreateItemView(LayoutInflater.from(this.getContext()), this, position);
 			}
 			if (mIndicatorView.getParent() != null) {
 				throw new IllegalStateException("View " + mIndicatorView + " has parent exist");
@@ -175,11 +207,9 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 			}
 			super.addView(mIndicatorView, -1, preLayoutParams);
 			// bind
-			this.mIndicatorAdapter.onBindIndicatorView(this, mIndicatorView, this.mCurrentItemPosition == position, position);
+			this.mIndicatorAdapter.onBindItemView(this, mIndicatorView, this.mCurrentItemPosition == position, position);
 		}
 	}
-
-	private int mCurrentItemPosition = -1;
 
 	private void performIndicatorChanged(int position) {
 		if (this.mIndicatorAdapter == null) {
@@ -189,13 +219,13 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 			View mIndicatorView = this.getChildAt(position);
 			// selected new position
 			if (mIndicatorView != null) {
-				this.mIndicatorAdapter.onBindIndicatorView(this, mIndicatorView, true, position);
+				this.mIndicatorAdapter.onBindItemView(this, mIndicatorView, true, position);
 			}
 			// unselected old position
 			if (this.mCurrentItemPosition >= 0) {
 				mIndicatorView = this.getChildAt(this.mCurrentItemPosition);
 				if (mIndicatorView != null) {
-					this.mIndicatorAdapter.onBindIndicatorView(this, mIndicatorView, false, this.mCurrentItemPosition);
+					this.mIndicatorAdapter.onBindItemView(this, mIndicatorView, false, this.mCurrentItemPosition);
 				}
 			}
 			this.mCurrentItemPosition = position;
@@ -213,6 +243,37 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 		if (!recycled) {
 			this.mRecycledPool.clear();
 			this.removeAllViews();
+		}
+	}
+
+	private void dispatchAdapterChanged(@Nullable ViewPagerCompat.Adapter oldAdapter, @Nullable ViewPagerCompat.Adapter newAdapter) {
+		if (oldAdapter != null) {
+			if (this.mAdapterDataSetObserver != null) {
+				oldAdapter.unregisterDataSetObserver(this.mAdapterDataSetObserver);
+			}
+		}
+		if (newAdapter != null) {
+			if (this.mAdapterDataSetObserver == null) {
+				this.mAdapterDataSetObserver = new AdapterDataSetObserver();
+			}
+			newAdapter.registerDataSetObserver(this.mAdapterDataSetObserver);
+		}
+		this.mBannerAdapter = newAdapter;
+		if (this.mIndicatorAdapter != null) {
+			this.mIndicatorAdapter.notifyDataSetChanged();
+		}
+	}
+
+	final class OnPageChangeListener extends ViewPagerCompat.OnSimplePageChangeListener {
+
+		@Override
+		public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+			performIndicatorChanged(position);
+		}
+
+		@Override
+		public void onPageSelected(int position) {
+			performIndicatorChanged(position);
 		}
 	}
 
@@ -242,38 +303,8 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 		}
 	}
 
-	final class OnIndicatorChangeListener extends ViewPagerCompat.OnSimplePageChangeListener {
-
-		/**
-		 * This method will be invoked when the current page is scrolled, either as part
-		 * of a programmatically initiated smooth scroll or a user initiated touch scroll.
-		 *
-		 * @param position             Position index of the first page currently being displayed.
-		 *                             Page position+1 will be visible if positionOffset is nonzero.
-		 * @param positionOffset       Value from [0, 1) indicating the offset from the page at position.
-		 * @param positionOffsetPixels Value in pixels indicating the offset from position.
-		 */
-		@Override
-		public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-			performIndicatorChanged(position);
-		}
-
-		/**
-		 * This method will be invoked when a new page becomes selected. Animation is not
-		 * necessarily complete.
-		 *
-		 * @param position Position index of the new selected page.
-		 */
-		@Override
-		public void onPageSelected(int position) {
-			performIndicatorChanged(position);
-		}
-	}
-
 	public static abstract class Adapter {
-
 		private final DataSetObservable mObservable = new DataSetObservable();
-
 		private DataSetObserver mViewPagerObserver;
 
 		public final void registerDataSetObserver(@NonNull DataSetObserver observer) {
@@ -294,9 +325,9 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 		}
 
 		@NonNull
-		public abstract View onCreateIndicatorView(@NonNull LayoutInflater inflater, @NonNull ViewGroup container, int position);
+		public abstract View onCreateItemView(@NonNull LayoutInflater inflater, @NonNull ViewGroup container, int position);
 
-		public abstract void onBindIndicatorView(@NonNull ViewGroup container, @NonNull View view, boolean hasSelected, int position);
+		public abstract void onBindItemView(@NonNull ViewGroup container, @NonNull View view, boolean hasSelected, int position);
 
 		final void setViewPagerObserver(@Nullable DataSetObserver observer) {
 			synchronized (this) {
@@ -353,7 +384,7 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 
 		@NonNull
 		@Override
-		public View onCreateIndicatorView(@NonNull LayoutInflater inflater, @NonNull ViewGroup container, int position) {
+		public View onCreateItemView(@NonNull LayoutInflater inflater, @NonNull ViewGroup container, int position) {
 			final RelativeLayout.LayoutParams preLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
 			preLayoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
 			preLayoutParams.width = this.mIndicatorWidth;
@@ -369,7 +400,7 @@ public class IndicatorView extends LinearLayout implements BannerLayout.Indicato
 		}
 
 		@Override
-		public void onBindIndicatorView(@NonNull ViewGroup container, @NonNull View view, boolean hasSelected, int position) {
+		public void onBindItemView(@NonNull ViewGroup container, @NonNull View view, boolean hasSelected, int position) {
 			final AppCompatImageView mImageView = view.findViewById(android.R.id.icon);
 			mImageView.setSelected(hasSelected);
 

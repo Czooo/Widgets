@@ -118,11 +118,11 @@ public class MainActivity extends AppCompatActivity {
 		final IndicatorView mIndicatorView = this.findViewById(R.id.indicatorView);
 		final BannerLayout mBannerLayout = this.findViewById(R.id.bannerLayout);
 		// 滚动方向
-		mBannerLayout.setScrollDirection(BannerLayout.SCROLL_DIRECTION_START);
+		mBannerLayout.setPlayScrollDirection(BannerLayout.PLAY_SCROLL_DIRECTION_START);
 		// 滚动动画
 		mBannerLayout.setPageTransformer(new HorDepthPageTransformer());
 		// 指示器
-		mBannerLayout.setIndicator(mIndicatorView);
+		mBannerLayout.addPlayIndicator(mIndicatorView);
 		// 用户手势操作
 		mBannerLayout.setAllowUserScrollable(true);
 		// 播放间隔时间：毫秒
@@ -132,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
 		// 自动管理生命周期
 		mBannerLayout.setLifecycleOwner(this);
 		// 自动循环播放
-		mBannerLayout.setAutoPlaying(true);
+		mBannerLayout.setAutoPlayFlags(true);
 		// 资源适配器
 		mBannerLayout.setAdapter(mAdapter);
 		// 开始循环播放

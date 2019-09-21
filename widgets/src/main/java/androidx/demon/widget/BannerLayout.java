@@ -172,29 +172,33 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 		}
 	}
 
+	private boolean mIsShouldPlayFlags = true;
 	private boolean mIsShouldAutoPlayFlags = true;
 	private boolean mIsShouldPlayInProgress = false;
 
 	@Override
-	public boolean handleMessage(Message msg) {
+	public synchronized boolean handleMessage(Message msg) {
 		final boolean handle = this.setPlayState(msg.what);
 		// play state changed
-		if (handle) {
-			final int curPlayState = this.mCurPlayState;
-
-			if (FLAG_STATE_START == curPlayState) {
-				this.mIsShouldPlayInProgress = true;
-			} else if (FLAG_STATE_STOP == curPlayState) {
-				this.mIsShouldPlayInProgress = false;
-			} else if (FLAG_STATE_PLAYING == curPlayState) {
-				if (PLAY_SCROLL_DIRECTION_START == this.mPlayScrollDirection) {
-					this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageEnd();
-				} else if (PLAY_SCROLL_DIRECTION_END == this.mPlayScrollDirection) {
-					this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageStart();
-				}
-				this.mIsShouldPlayInProgress &= this.mIsShouldAutoPlayFlags;
+		if (handle || this.mIsShouldPlayInProgress) {
+			switch (this.mCurPlayState) {
+				case FLAG_STATE_START:
+					this.mIsShouldPlayInProgress = true;
+					break;
+				case FLAG_STATE_STOP:
+					this.mIsShouldPlayInProgress = false;
+					break;
+				case FLAG_STATE_PLAYING:
+					if (PLAY_SCROLL_DIRECTION_START == this.mPlayScrollDirection) {
+						this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageEnd();
+					} else if (PLAY_SCROLL_DIRECTION_END == this.mPlayScrollDirection) {
+						this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageStart();
+					}
+					this.mIsShouldPlayInProgress &= this.mIsShouldAutoPlayFlags;
+					break;
 			}
-			if (this.mIsShouldPlayInProgress) {
+			// intercept play state
+			if (this.mIsShouldPlayInProgress &= this.mIsShouldPlayFlags) {
 				this.nextPlay();
 			} else {
 				this.stopPlay();
@@ -220,8 +224,6 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	}
 
 	private synchronized void nextPlay() {
-		this.mPlayStateHandler.removeMessages(FLAG_STATE_START);
-		this.mPlayStateHandler.removeMessages(FLAG_STATE_STOP);
 		this.mPlayStateHandler.removeMessages(FLAG_STATE_PLAYING);
 		this.mPlayStateHandler.sendEmptyMessageDelayed(FLAG_STATE_PLAYING, this.mAutoPlayDelayMillis);
 	}
@@ -234,9 +236,12 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	private boolean setPlayState(int playState) {
 		if (this.mCurPlayState != playState) {
 			this.mCurPlayState = playState;
-			return true;
-		}
-		if (FLAG_STATE_PLAYING == playState) {
+
+			if (this.mOnPlayStateListeners != null) {
+				for (OnPlayStateListener listener : this.mOnPlayStateListeners) {
+					listener.onPlayStateChanged(this, playState);
+				}
+			}
 			return true;
 		}
 		return false;
@@ -344,6 +349,12 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	public void setPlayScrollDirection(int direction) {
 		if (this.mPlayScrollDirection != direction) {
 			this.mPlayScrollDirection = direction;
+		}
+	}
+
+	public void setShouldPlayFlags(boolean flags) {
+		if (this.mIsShouldPlayFlags != flags) {
+			this.mIsShouldPlayFlags = flags;
 		}
 	}
 

@@ -138,6 +138,13 @@ public class MainActivity extends AppCompatActivity {
 		// 开始循环播放
 		mBannerLayout.startPlay();
 
+		mBannerLayout.addOnPlayStateListener(new BannerLayout.OnPlayStateListener() {
+			@Override
+			public void onPlayStateChanged(@NonNull BannerLayout container, int playState) {
+				Log.e("Adapter", "onPlayStateChanged " + mBannerLayout.isShouldPlayInProgress() + " => " + playState);
+			}
+		});
+
 		this.findViewById(R.id.viewPagerCompat)
 				.setOnClickListener(new View.OnClickListener() {
 					@Override

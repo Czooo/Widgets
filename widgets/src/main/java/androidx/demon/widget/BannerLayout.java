@@ -402,40 +402,20 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	@OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
 	protected void onResume() {
 		this.startPlay();
-		if (this.mPlayIndicators != null) {
-			for (PlayIndicator indicator : this.mPlayIndicators) {
-				indicator.onResume();
-			}
-		}
 	}
 
 	@OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
 	protected void onPause() {
 		this.stopPlay();
-		if (this.mPlayIndicators != null) {
-			for (PlayIndicator indicator : this.mPlayIndicators) {
-				indicator.onPause();
-			}
-		}
 	}
 
 	@OnLifecycleEvent(Lifecycle.Event.ON_STOP)
 	protected void onStop() {
 		this.stopPlay();
-		if (this.mPlayIndicators != null) {
-			for (PlayIndicator indicator : this.mPlayIndicators) {
-				indicator.onStop();
-			}
-		}
 	}
 
 	@OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
 	protected void onDestroy() {
-		if (this.mPlayIndicators != null) {
-			for (PlayIndicator indicator : this.mPlayIndicators) {
-				indicator.onDestroy();
-			}
-		}
 		this.recycled();
 	}
 
@@ -449,14 +429,6 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 		void onAttachedToParent(@NonNull ViewGroup container);
 
 		void onDetachedFromParent(@NonNull ViewGroup container);
-
-		void onResume();
-
-		void onPause();
-
-		void onStop();
-
-		void onDestroy();
 	}
 
 	public static class SavedState extends AbsSavedState {

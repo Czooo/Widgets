@@ -91,26 +91,6 @@ public class IndicatorView extends LinearLayout implements BannerLayout.PlayIndi
 		this.mBannerAdapter = null;
 	}
 
-	@Override
-	public void onResume() {
-
-	}
-
-	@Override
-	public void onPause() {
-
-	}
-
-	@Override
-	public void onStop() {
-
-	}
-
-	@Override
-	public void onDestroy() {
-
-	}
-
 	/**
 	 * Called when the adapter for the given view pager has changed.
 	 *

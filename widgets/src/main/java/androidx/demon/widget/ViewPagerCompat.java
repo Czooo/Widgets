@@ -1070,8 +1070,12 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		if (this.mAdapter == null || this.mAdapter.getItemCount() <= 0) {
 			return false;
 		}
+		if (this.mFirstLayout) {
+			this.requestLayout();
+			return true;
+		}
 		if (this.mIsScrollingLoop) {
-			this.setCurrentItemInternal(this.mCurrentPosition - 1, true, false);
+			this.setCurrentItem(this.mCurrentPosition - 1, true);
 			return true;
 		} else {
 			if (this.mCurrentPosition > 0) {
@@ -1086,8 +1090,12 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		if (this.mAdapter == null || this.mAdapter.getItemCount() <= 0) {
 			return false;
 		}
+		if (this.mFirstLayout) {
+			this.requestLayout();
+			return true;
+		}
 		if (this.mIsScrollingLoop) {
-			this.setCurrentItemInternal(this.mCurrentPosition + 1, true, false);
+			this.setCurrentItem(this.mCurrentPosition + 1, true);
 			return true;
 		} else {
 			if (this.mCurrentPosition < (this.mAdapter.getItemCount() - 1)) {
@@ -1700,14 +1708,10 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	public void setAllowUserScrollable(boolean allowUserScrollable) {
 		if (this.mIsAllowUserScrollable != allowUserScrollable) {
 			this.mIsAllowUserScrollable = allowUserScrollable;
-			if (!this.mIsAllowUserScrollable) {
-				final boolean wasFirstLayout = this.mFirstLayout;
-				this.mFirstLayout = true;
-				if (wasFirstLayout) {
-					this.requestLayout();
-				} else {
-					this.populate();
-				}
+			if (this.mFirstLayout) {
+				this.requestLayout();
+			} else {
+				this.populate();
 			}
 		}
 	}
@@ -1870,12 +1874,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			} else {
 				this.mMinimumVelocity = (int) (MIN_FLING_VELOCITY_HORIZONTAL * density);
 			}
-			if (this.mFirstLayout) {
-				this.populate();
-			} else {
-				this.mFirstLayout = true;
-				this.requestLayout();
-			}
+			this.mFirstLayout = true;
+			this.requestLayout();
 		}
 	}
 
@@ -1891,10 +1891,9 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		if (this.mIsScrollingLoop != loop) {
 			this.mIsScrollingLoop = loop;
 			if (this.mFirstLayout) {
-				this.populate();
-			} else {
-				this.mFirstLayout = true;
 				this.requestLayout();
+			} else {
+				this.populate();
 			}
 		}
 	}
@@ -1904,7 +1903,11 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	}
 
 	public int getCurrentItem() {
-		return this.adapterPositionForPosition(this.mCurrentPosition);
+		return this.adapterPositionForPosition(this.getCurrentLayoutItem());
+	}
+
+	public int getCurrentLayoutItem() {
+		return this.mCurrentPosition;
 	}
 
 	public void setCurrentItem(int position) {
@@ -1912,12 +1915,6 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	}
 
 	public void setCurrentItem(int position, boolean smoothScroll) {
-		if (this.mAdapter == null) {
-			throw new IllegalStateException("Not adapter created set");
-		}
-		if (position < 0 || position >= this.mAdapter.getItemCount()) {
-			throw new IndexOutOfBoundsException("Index: " + position + ", Size: " + this.mAdapter.getItemCount());
-		}
 		this.mPopulatePending = false;
 		if (this.mIsScrollingLoop) {
 			final int mAdapterPosition = this.adapterPositionForPosition(this.mCurrentPosition);
@@ -1955,6 +1952,9 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			return;
 		}
 
+		if (!this.mIsScrollingLoop) {
+			position = Math.max(0, Math.min(position, this.mAdapter.getItemCount() - 1));
+		}
 		final int pageLimit = this.mOffscreenPageLimit;
 		if (position > (this.mCurrentPosition + pageLimit) || position < (this.mCurrentPosition - pageLimit)) {
 			for (int index = 0; index < this.mPagePool.size(); index++) {

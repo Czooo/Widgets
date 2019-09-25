@@ -114,6 +114,12 @@ public class NineGridViewActivity extends AppCompatActivity {
 									.into(imageView);
 						}
 					};
+					mBannerLayout.addOnPlayStateListener(new BannerLayout.OnPlayStateListener() {
+						@Override
+						public void onPlayStateChanged(@NonNull BannerLayout container, int playState) {
+							Log.e("NineGridView", "Playing State " + playState);
+						}
+					});
 					// 自动管理生命周期
 					mBannerLayout.setLifecycleOwner(NineGridViewActivity.this);
 					// 滚动方向

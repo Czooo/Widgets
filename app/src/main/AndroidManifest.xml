@@ -30,7 +30,6 @@
         <activity android:name=".ViewPagerCompatActivity"/>
         <activity android:name=".FragmentPagerAdapterActivity"/>
         <activity android:name=".NineGridViewActivity"/>
-        <activity android:name=".StickLayoutManagerActivity"/>
         <activity android:name=".RefreshLayoutActivity"/>
         <activity android:name=".NestedRefreshLayoutActivity"/>
         <activity

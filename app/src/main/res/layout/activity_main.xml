@@ -92,13 +92,6 @@
                 android:text="FlowLabelView"
                 android:textAllCaps="false"/>
 
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/stickLayoutManager"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="StickLayoutManager"
-                android:textAllCaps="false"/>
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="300dp"

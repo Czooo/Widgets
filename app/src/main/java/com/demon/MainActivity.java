@@ -201,12 +201,5 @@ public class MainActivity extends AppCompatActivity {
 						startActivity(new Intent(MainActivity.this, FlowLabelViewActivity.class));
 					}
 				});
-		this.findViewById(R.id.stickLayoutManager)
-				.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						startActivity(new Intent(MainActivity.this, StickLayoutManagerActivity.class));
-					}
-				});
 	}
 }

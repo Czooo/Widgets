@@ -435,6 +435,10 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 			return this.getDragRelativeLayout().canScrollHorizontally();
 		}
 
+		public final int getScrollState() {
+			return this.getNestedScrollingHelper().getScrollState();
+		}
+
 		public final int getOrientation() {
 			return this.getDragRelativeLayout().getOrientation();
 		}

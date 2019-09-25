@@ -3,7 +3,6 @@ package androidx.demon.widget;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -153,16 +152,6 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	}
 
 	@Override
-	protected void onFocusChanged(boolean gainFocus, int direction, @Nullable Rect previouslyFocusedRect) {
-		super.onFocusChanged(gainFocus, direction, previouslyFocusedRect);
-		if (gainFocus) {
-			this.startPlay();
-		} else {
-			this.stopPlay();
-		}
-	}
-
-	@Override
 	protected void onVisibilityChanged(@NonNull View changedView, int visibility) {
 		super.onVisibilityChanged(changedView, visibility);
 		if (View.VISIBLE == visibility) {
@@ -181,6 +170,8 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 		final boolean handle = this.setPlayState(msg.what);
 		// play state changed
 		if (handle || this.mIsShouldPlayInProgress) {
+			long autoPlayDelayMillis = this.mAutoPlayDelayMillis;
+
 			switch (this.mCurPlayState) {
 				case FLAG_STATE_START:
 					this.mIsShouldPlayInProgress = true;
@@ -189,17 +180,24 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 					this.mIsShouldPlayInProgress = false;
 					break;
 				case FLAG_STATE_PLAYING:
-					if (PLAY_SCROLL_DIRECTION_START == this.mPlayScrollDirection) {
-						this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageEnd();
-					} else if (PLAY_SCROLL_DIRECTION_END == this.mPlayScrollDirection) {
-						this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageStart();
+					if (this.isShown() && this.mIsShouldPlayInProgress) {
+						final int positionByBefore = this.mViewPagerCompat.getCurrentLayoutItem();
+						if (PLAY_SCROLL_DIRECTION_START == this.mPlayScrollDirection) {
+							this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageEnd();
+						} else if (PLAY_SCROLL_DIRECTION_END == this.mPlayScrollDirection) {
+							this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageStart();
+						}
+						if (positionByBefore == this.mViewPagerCompat.getCurrentLayoutItem()) {
+							autoPlayDelayMillis = 0L;
+						}
+						this.mIsShouldPlayInProgress &= this.mIsShouldAutoPlayFlags;
+					} else {
+						this.mIsShouldPlayInProgress = false;
 					}
-					this.mIsShouldPlayInProgress &= this.mIsShouldAutoPlayFlags;
 					break;
 			}
-			// intercept play state
 			if (this.mIsShouldPlayInProgress &= this.mIsShouldPlayFlags) {
-				this.nextPlay();
+				this.nextPlay(autoPlayDelayMillis);
 			} else {
 				this.stopPlay();
 			}
@@ -208,7 +206,7 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	}
 
 	public synchronized void startPlay() {
-		if (!this.mIsShouldPlayInProgress) {
+		if (this.isEnabled() && !this.mIsShouldPlayInProgress) {
 			this.mPlayStateHandler.removeMessages(FLAG_STATE_STOP);
 			this.mPlayStateHandler.removeMessages(FLAG_STATE_PLAYING);
 			this.mPlayStateHandler.removeMessages(FLAG_STATE_START);
@@ -223,9 +221,9 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 		this.mPlayStateHandler.sendEmptyMessage(FLAG_STATE_STOP);
 	}
 
-	private synchronized void nextPlay() {
+	private synchronized void nextPlay(long delayMillis) {
 		this.mPlayStateHandler.removeMessages(FLAG_STATE_PLAYING);
-		this.mPlayStateHandler.sendEmptyMessageDelayed(FLAG_STATE_PLAYING, this.mAutoPlayDelayMillis);
+		this.mPlayStateHandler.sendEmptyMessageDelayed(FLAG_STATE_PLAYING, delayMillis);
 	}
 
 	public synchronized void recycled() {

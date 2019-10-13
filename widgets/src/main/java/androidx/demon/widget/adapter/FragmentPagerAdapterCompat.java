@@ -15,13 +15,13 @@ import androidx.lifecycle.Lifecycle;
  * Author create by ok on 2019-07-15
  * Email : ok@163.com.
  */
-public abstract class FragmentPagerAdapter extends ViewPagerCompat.Adapter {
+public abstract class FragmentPagerAdapterCompat extends ViewPagerCompat.Adapter {
 
 	private final FragmentManager mFragmentManager;
 	private FragmentTransaction mCurTransaction = null;
 	private Fragment mCurrentPrimaryFragment = null;
 
-	public FragmentPagerAdapter(@NonNull FragmentManager fragmentManager) {
+	public FragmentPagerAdapterCompat(@NonNull FragmentManager fragmentManager) {
 		this.mFragmentManager = fragmentManager;
 	}
 
@@ -97,7 +97,11 @@ public abstract class FragmentPagerAdapter extends ViewPagerCompat.Adapter {
 	public void onFinishUpdate(@NonNull ViewGroup container) {
 		super.onFinishUpdate(container);
 		if (this.mCurTransaction != null) {
-			this.mCurTransaction.commitNowAllowingStateLoss();
+			try {
+				this.mCurTransaction.commitNowAllowingStateLoss();
+			} catch (IllegalStateException e) {
+				this.mCurTransaction.commitAllowingStateLoss();
+			}
 			this.mCurTransaction = null;
 		}
 	}

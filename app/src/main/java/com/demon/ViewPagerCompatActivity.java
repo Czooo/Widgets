@@ -17,7 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
 import androidx.demon.widget.ViewPagerCompat;
-import androidx.demon.widget.adapter.PagerAdapter;
+import androidx.demon.widget.adapter.PagerAdapterCompat;
 import androidx.demon.widget.transformers.DepthPageTransformer;
 
 /**
@@ -55,7 +55,7 @@ public class ViewPagerCompatActivity extends AppCompatActivity {
 			}
 		});
 
-		final PagerAdapter<ViewHolder> mPagerAdapter = new PagerAdapter<ViewHolder>() {
+		final PagerAdapterCompat<ViewHolder> mPagerAdapterCompat = new PagerAdapterCompat<ViewHolder>() {
 
 			@NonNull
 			@Override
@@ -128,7 +128,7 @@ public class ViewPagerCompatActivity extends AppCompatActivity {
 		};
 		final ViewPagerCompat mViewPagerCompat = findViewById(R.id.viewPagerCompat);
 		mViewPagerCompat.setPageTransformer(true, new DepthPageTransformer());
-		mViewPagerCompat.setAdapter(mPagerAdapter);
+		mViewPagerCompat.setAdapter(mPagerAdapterCompat);
 		mViewPagerCompat.setOffscreenPageLimit(2);
 //		ColorDrawable drawable = new ColorDrawable(Color.RED);
 //		mViewPagerCompat.setPageMarginDrawable(drawable);
@@ -171,7 +171,7 @@ public class ViewPagerCompatActivity extends AppCompatActivity {
 				});
 	}
 
-	static class ViewHolder extends PagerAdapter.ViewHolder {
+	static class ViewHolder extends PagerAdapterCompat.ViewHolder {
 
 		ViewHolder(@NonNull View itemView) {
 			super(itemView);

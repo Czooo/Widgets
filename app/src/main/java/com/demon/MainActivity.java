@@ -25,7 +25,7 @@ import androidx.demon.widget.BannerLayout;
 import androidx.demon.widget.IndicatorView;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
-import androidx.demon.widget.adapter.PagerAdapter;
+import androidx.demon.widget.adapter.PagerAdapterCompat;
 import androidx.demon.widget.helper.NestedScrollingHelper;
 import androidx.demon.widget.transformers.HorDepthPageTransformer;
 
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
 		data.add("http://img0.imgtn.bdimg.com/it/u=1732553485,3379133703&fm=26&gp=0.jpg");
 		data.add("https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=4012045560,650010815&fm=26&gp=0.jpg");
 		data.add("https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=2771670718,331933807&fm=26&gp=0.jpg");
-		final PagerAdapter<PagerAdapter.ViewHolder> mAdapter = new PagerAdapter<PagerAdapter.ViewHolder>() {
+		final PagerAdapterCompat<PagerAdapterCompat.ViewHolder> mAdapter = new PagerAdapterCompat<PagerAdapterCompat.ViewHolder>() {
 
 			@Override
 			public int getItemCount() {
@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
 				return super.getItemViewType(position);
 			}
 		};
-		mAdapter.setOnItemClickListener(new PagerAdapter.OnItemClickListener() {
+		mAdapter.setOnItemClickListener(new PagerAdapterCompat.OnItemClickListener() {
 
 			@Override
 			public void onItemClick(@NonNull ViewGroup container, @NonNull View view, int position) {
@@ -198,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
 				.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
-						startActivity(new Intent(MainActivity.this, FlowLabelViewActivity.class));
+//						startActivity(new Intent(MainActivity.this, TMActivity.class));
 					}
 				});
 	}

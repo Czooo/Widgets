@@ -16,7 +16,7 @@ import androidx.demon.widget.cache.RecycledPool;
  * Author create by ok on 2019-07-15
  * Email : ok@163.com.
  */
-public abstract class PagerAdapter<VH extends PagerAdapter.ViewHolder> extends ViewPagerCompat.Adapter {
+public abstract class PagerAdapterCompat<VH extends PagerAdapterCompat.ViewHolder> extends ViewPagerCompat.Adapter {
 
 	private final RecycledPool<VH> mRecycledPool = new RecycledPool<>();
 	private final SparseArray<VH> mViewHolderPool = new SparseArray<>();
@@ -187,7 +187,7 @@ public abstract class PagerAdapter<VH extends PagerAdapter.ViewHolder> extends V
 		@Override
 		public void onAdapterChanged(@NonNull ViewPagerCompat container, @Nullable ViewPagerCompat.Adapter oldAdapter, @Nullable ViewPagerCompat.Adapter newAdapter) {
 			if (oldAdapter != null) {
-				PagerAdapter.this.mRecycledPool.clear();
+				PagerAdapterCompat.this.mRecycledPool.clear();
 			}
 		}
 	}

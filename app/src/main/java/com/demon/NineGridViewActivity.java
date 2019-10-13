@@ -26,7 +26,7 @@ import androidx.demon.widget.IndicatorView;
 import androidx.demon.widget.NineGridView;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
-import androidx.demon.widget.adapter.PagerAdapter;
+import androidx.demon.widget.adapter.PagerAdapterCompat;
 import androidx.demon.widget.transformers.HorDepthPageTransformer;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -86,7 +86,7 @@ public class NineGridViewActivity extends AppCompatActivity {
 					data.add("http://img0.imgtn.bdimg.com/it/u=1732553485,3379133703&fm=26&gp=0.jpg");
 					data.add("https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=4012045560,650010815&fm=26&gp=0.jpg");
 					data.add("https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=2771670718,331933807&fm=26&gp=0.jpg");
-					final PagerAdapter<PagerAdapter.ViewHolder> mAdapter = new PagerAdapter<PagerAdapter.ViewHolder>() {
+					final PagerAdapterCompat<PagerAdapterCompat.ViewHolder> mAdapter = new PagerAdapterCompat<PagerAdapterCompat.ViewHolder>() {
 
 						@Override
 						public int getItemCount() {
@@ -95,7 +95,7 @@ public class NineGridViewActivity extends AppCompatActivity {
 
 						@NonNull
 						@Override
-						public PagerAdapter.ViewHolder onCreateViewHolder(@NonNull LayoutInflater inflater, @NonNull ViewGroup container, int itemViewType) {
+						public PagerAdapterCompat.ViewHolder onCreateViewHolder(@NonNull LayoutInflater inflater, @NonNull ViewGroup container, int itemViewType) {
 							final View itemView = inflater.inflate(R.layout.item_banner_layout, container, false);
 							return new ViewHolder(itemView) {
 							};

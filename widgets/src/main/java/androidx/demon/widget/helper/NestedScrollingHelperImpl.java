@@ -21,6 +21,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.NestedScrollingChildHelper;
 import androidx.core.view.NestedScrollingParent;
+import androidx.core.view.NestedScrollingParent2;
 import androidx.core.view.NestedScrollingParentHelper;
 import androidx.core.view.ViewCompat;
 
@@ -81,9 +82,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	private int mActivePointerId = INVALID_POINTER;
 	private int mScrollState = SCROLL_STATE_IDLE;
 
-	private final int[] mScrollStepConsumed = new int[2];
 	private final int[] mScrollConsumed = new int[2];
-
 	private final int[] mScrollOffsetCount = new int[2];
 	private final int[] mScrollOffset = new int[2];
 
@@ -129,15 +128,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 					this.mViewScroller.stopScrollInternal();
 					this.setScrollState(SCROLL_STATE_DRAGGING);
 				}
-
-				int nestedScrollAxis = ViewCompat.SCROLL_AXIS_NONE;
-				if (canScrollHorizontally) {
-					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_HORIZONTAL;
-				}
-				if (canScrollVertically) {
-					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_VERTICAL;
-				}
-				this.startNestedScroll(nestedScrollAxis);
 				break;
 			case MotionEvent.ACTION_MOVE:
 				mPointerIndex = event.findPointerIndex(this.mActivePointerId);
@@ -232,7 +222,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				if (this.mCallback.canScrollVertically()) {
 					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_VERTICAL;
 				}
-				this.startNestedScroll(nestedScrollAxis);
+//				this.startNestedScroll(nestedScrollAxis);
 				break;
 			case MotionEvent.ACTION_MOVE:
 				mPointerIndex = event.findPointerIndex(this.mActivePointerId);
@@ -245,11 +235,10 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				int dx = (int) (this.mLastTouchMotionX - x + 0.5F);
 				int dy = (int) (this.mLastTouchMotionY - y + 0.5F);
 
-				Arrays.fill(this.mScrollConsumed, 0);
-				if (this.dispatchNestedPreScroll(dx, dy, this.mScrollConsumed, this.mScrollOffset)) {
-					dx -= this.mScrollConsumed[0];
-					dy -= this.mScrollConsumed[1];
-				}
+//				if (this.dispatchNestedPreScroll(dx, dy, this.mScrollConsumed, this.mScrollOffset)) {
+//					dx -= this.mScrollConsumed[0];
+//					dy -= this.mScrollConsumed[1];
+//				}
 
 				// Now check start dragging
 				if (!this.mIsBeingDragged) {
@@ -281,10 +270,10 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 					// Scroll to follow the motion event
 					this.scrollByInternal(dx, dy, this.consumed, this.unconsumed);
 					// Update the last touch co-ords, taking any scroll offset into account
-					if (this.dispatchNestedScroll(this.consumed[0], this.consumed[1], unconsumed[0], unconsumed[1], this.mScrollOffset)) {
-						this.mLastTouchMotionX -= this.mScrollOffset[0];
-						this.mLastTouchMotionY -= this.mScrollOffset[1];
-					}
+//					if (this.dispatchNestedScroll(this.consumed[0], this.consumed[1], this.unconsumed[0], this.unconsumed[1], this.mScrollOffset)) {
+//						this.mLastTouchMotionX -= this.mScrollOffset[0];
+//						this.mLastTouchMotionY -= this.mScrollOffset[1];
+//					}
 				}
 				break;
 			case MotionEvent.ACTION_POINTER_DOWN:
@@ -313,6 +302,11 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 		return true;
 	}
 
+	@Override
+	public boolean isNestedScrollInProgress() {
+		return this.mNestedScrollInProgress;
+	}
+
 	private void resetTouchEvent() {
 		this.mActivePointerId = INVALID_POINTER;
 		this.mIsBeingDragged = false;
@@ -330,27 +324,24 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	private final int[] consumed = new int[2];
 	private final int[] unconsumed = new int[2];
 
-	private void scrollByInternal(int deltaX, int deltaY) {
+	public final void scrollByInternal(int deltaX, int deltaY) {
 		this.scrollByInternal(deltaX, deltaY, this.consumed);
 	}
 
-	private void scrollByInternal(int deltaX, int deltaY, @NonNull int[] consumed) {
+	public final void scrollByInternal(int deltaX, int deltaY, @NonNull int[] consumed) {
 		this.scrollByInternal(deltaX, deltaY, consumed, this.unconsumed);
 	}
 
-	private void scrollByInternal(int deltaX, int deltaY, @NonNull int[] consumed, @NonNull int[] unconsumed) {
-		if (DEBUG) {
-			Log.e(TAG, "scrollByInternal dy " + deltaY);
-		}
-		Arrays.fill(consumed, 0);
-		Arrays.fill(unconsumed, 0);
+	public final void scrollByInternal(int deltaX, int deltaY, @NonNull int[] consumed, @NonNull int[] unconsumed) {
 		this.scrollStep(deltaX, deltaY, consumed, unconsumed);
 	}
 
-	private void scrollStep(int deltaX, int deltaY, @NonNull int[] consumed, @NonNull int[] unconsumed) {
+	protected void scrollStep(int deltaX, int deltaY, @NonNull int[] consumed, @NonNull int[] unconsumed) {
 		if (DEBUG) {
 			Log.e(TAG, "scrollStep dy " + deltaY);
 		}
+		Arrays.fill(consumed, 0);
+		Arrays.fill(unconsumed, 0);
 		if (deltaX != 0 || deltaY != 0) {
 			final int dxConsumed = this.getScrollOffsetX();
 			final int dyConsumed = this.getScrollOffsetY();
@@ -375,21 +366,13 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 					unconsumedY = deltaY;
 				}
 			}
-
 			if (DEBUG) {
 				Log.e(TAG, "scrollStep unconsumedY " + unconsumedY);
 			}
 			if (unconsumedX != 0 || unconsumedY != 0) {
-				Arrays.fill(this.mScrollStepConsumed, 0);
-				// start dragging
-				this.mCallback.onScrollBy(this, unconsumedX, unconsumedY, this.mScrollStepConsumed);
-
-				consumed[0] = this.mScrollStepConsumed[0];
-				consumed[1] = this.mScrollStepConsumed[1];
-
+				this.mCallback.onScrollBy(this, unconsumedX, unconsumedY, consumed);
 				this.mScrollOffsetCount[0] += consumed[0];
 				this.mScrollOffsetCount[1] += consumed[1];
-
 				if (consumed[0] != 0 || consumed[1] != 0) {
 					this.dispatchOnScrolled(consumed[0], consumed[1]);
 				}
@@ -525,16 +508,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	}
 
 	@Override
-	public void lockedNestedScroll() {
-
-	}
-
-	@Override
-	public void unlockedNestedScroll() {
-
-	}
-
-	@Override
 	public int getPreScrollDirection(int delta) {
 		return Integer.compare(this.getScrollOffset() + delta, 0);
 	}
@@ -644,7 +617,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				// rollback scrolling
 				NestedScrollingHelperImpl.this.scrollByInternal(unconsumedX, unconsumedY, this.consumed, this.unconsumed);
 
-				if (!NestedScrollingHelperImpl.this.dispatchNestedScroll(this.consumed[0], this.consumed[1], this.unconsumed[0], this.unconsumed[1], null)
+				if (!NestedScrollingHelperImpl.this.dispatchNestedScroll(this.consumed[0], this.consumed[1], this.unconsumed[0], this.unconsumed[1], null, ViewCompat.TYPE_NON_TOUCH)
 						&& (this.unconsumed[0] != 0 || this.unconsumed[1] != 0)) {
 					final int mCurrVelocity = (int) this.mOverScroller.getCurrVelocity();
 
@@ -881,7 +854,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	public boolean onStartNestedScroll(@NonNull View child, @NonNull View target, int nestedScrollAxes) {
 		return this.mAnchorView.isEnabled()
-				&& this.mAnchorView.isNestedScrollingEnabled()
+				&& this.mAnchorView.isShown()
 				&& (((nestedScrollAxes & ViewCompat.SCROLL_AXIS_VERTICAL) != 0 && this.mCallback.canScrollVertically())
 				|| ((nestedScrollAxes & ViewCompat.SCROLL_AXIS_HORIZONTAL) != 0 && this.mCallback.canScrollHorizontally()));
 	}
@@ -1215,7 +1188,50 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 */
 	@Override
 	public boolean startNestedScroll(int axes) {
-		return this.mNestedScrollingChildHelper.startNestedScroll(axes);
+		return this.startNestedScroll(axes, ViewCompat.TYPE_TOUCH);
+	}
+
+	/**
+	 * Begin a nestable scroll operation along the given axes, for the given input type.
+	 *
+	 * <p>A view starting a nested scroll promises to abide by the following contract:</p>
+	 *
+	 * <p>The view will call startNestedScroll upon initiating a scroll operation. In the case
+	 * of a touch scroll type this corresponds to the initial {@link MotionEvent#ACTION_DOWN}.
+	 * In the case of touch scrolling the nested scroll will be terminated automatically in
+	 * the same manner as {@link ViewParent#requestDisallowInterceptTouchEvent(boolean)}.
+	 * In the event of programmatic scrolling the caller must explicitly call
+	 * {@link #stopNestedScroll(int)} to indicate the end of the nested scroll.</p>
+	 *
+	 * <p>If <code>startNestedScroll</code> returns true, a cooperative parent was found.
+	 * If it returns false the caller may ignore the rest of this contract until the next scroll.
+	 * Calling startNestedScroll while a nested scroll is already in progress will return true.</p>
+	 *
+	 * <p>At each incremental step of the scroll the caller should invoke
+	 * {@link #dispatchNestedPreScroll(int, int, int[], int[], int) dispatchNestedPreScroll}
+	 * once it has calculated the requested scrolling delta. If it returns true the nested scrolling
+	 * parent at least partially consumed the scroll and the caller should adjust the amount it
+	 * scrolls by.</p>
+	 *
+	 * <p>After applying the remainder of the scroll delta the caller should invoke
+	 * {@link #dispatchNestedScroll(int, int, int, int, int[], int) dispatchNestedScroll}, passing
+	 * both the delta consumed and the delta unconsumed. A nested scrolling parent may treat
+	 * these values differently. See
+	 * {@link NestedScrollingParent2#onNestedScroll(View, int, int, int, int, int)}.
+	 * </p>
+	 *
+	 * @param axes Flags consisting of a combination of {@link ViewCompat#SCROLL_AXIS_HORIZONTAL}
+	 *             and/or {@link ViewCompat#SCROLL_AXIS_VERTICAL}.
+	 * @param type the type of input which cause this scroll event
+	 * @return true if a cooperative parent was found and nested scrolling has been enabled for
+	 * the current gesture.
+	 * @see #stopNestedScroll(int)
+	 * @see #dispatchNestedPreScroll(int, int, int[], int[], int)
+	 * @see #dispatchNestedScroll(int, int, int, int, int[], int)
+	 */
+	@Override
+	public boolean startNestedScroll(int axes, int type) {
+		return this.mNestedScrollingChildHelper.startNestedScroll(axes, type);
 	}
 
 	/**
@@ -1227,7 +1243,20 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 */
 	@Override
 	public void stopNestedScroll() {
-		this.mNestedScrollingChildHelper.stopNestedScroll();
+		this.stopNestedScroll(ViewCompat.TYPE_TOUCH);
+	}
+
+	/**
+	 * Stop a nested scroll in progress for the given input type.
+	 *
+	 * <p>Calling this method when a nested scroll is not currently in progress is harmless.</p>
+	 *
+	 * @param type the type of input which cause this scroll event
+	 * @see #startNestedScroll(int, int)
+	 */
+	@Override
+	public void stopNestedScroll(int type) {
+		this.mNestedScrollingChildHelper.stopNestedScroll(type);
 	}
 
 	/**
@@ -1240,7 +1269,21 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 */
 	@Override
 	public boolean hasNestedScrollingParent() {
-		return this.mNestedScrollingChildHelper.hasNestedScrollingParent();
+		return this.hasNestedScrollingParent(ViewCompat.TYPE_TOUCH);
+	}
+
+	/**
+	 * Returns true if this view has a nested scrolling parent for the given input type.
+	 *
+	 * <p>The presence of a nested scrolling parent indicates that this view has initiated
+	 * a nested scroll and it was accepted by an ancestor view further up the view hierarchy.</p>
+	 *
+	 * @param type the type of input which cause this scroll event
+	 * @return whether this view has a nested scrolling parent
+	 */
+	@Override
+	public boolean hasNestedScrollingParent(int type) {
+		return this.mNestedScrollingChildHelper.hasNestedScrollingParent(type);
 	}
 
 	/**
@@ -1268,7 +1311,36 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 */
 	@Override
 	public boolean dispatchNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, @Nullable int[] offsetInWindow) {
-		return this.mNestedScrollingChildHelper.dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, offsetInWindow);
+		return this.dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, offsetInWindow, ViewCompat.TYPE_TOUCH);
+	}
+
+	/**
+	 * Dispatch one step of a nested scroll in progress.
+	 *
+	 * <p>Implementations of views that support nested scrolling should call this to report
+	 * info about a scroll in progress to the current nested scrolling parent. If a nested scroll
+	 * is not currently in progress or nested scrolling is not
+	 * {@link #isNestedScrollingEnabled() enabled} for this view this method does nothing.</p>
+	 *
+	 * <p>Compatible View implementations should also call
+	 * {@link #dispatchNestedPreScroll(int, int, int[], int[], int) dispatchNestedPreScroll} before
+	 * consuming a component of the scroll event themselves.</p>
+	 *
+	 * @param dxConsumed     Horizontal distance in pixels consumed by this view during this scroll step
+	 * @param dyConsumed     Vertical distance in pixels consumed by this view during this scroll step
+	 * @param dxUnconsumed   Horizontal scroll distance in pixels not consumed by this view
+	 * @param dyUnconsumed   Horizontal scroll distance in pixels not consumed by this view
+	 * @param offsetInWindow Optional. If not null, on return this will contain the offset
+	 *                       in local view coordinates of this view from before this operation
+	 *                       to after it completes. View implementations may use this to adjust
+	 *                       expected input coordinate tracking.
+	 * @param type           the type of input which cause this scroll event
+	 * @return true if the event was dispatched, false if it could not be dispatched.
+	 * @see #dispatchNestedPreScroll(int, int, int[], int[], int)
+	 */
+	@Override
+	public boolean dispatchNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, @Nullable int[] offsetInWindow, int type) {
+		return this.mNestedScrollingChildHelper.dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, offsetInWindow, type);
 	}
 
 	/**
@@ -1292,7 +1364,32 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 */
 	@Override
 	public boolean dispatchNestedPreScroll(int dx, int dy, @Nullable int[] consumed, @Nullable int[] offsetInWindow) {
-		return this.mNestedScrollingChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow);
+		return this.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow, ViewCompat.TYPE_TOUCH);
+	}
+
+	/**
+	 * Dispatch one step of a nested scroll in progress before this view consumes any portion of it.
+	 *
+	 * <p>Nested pre-scroll events are to nested scroll events what touch intercept is to touch.
+	 * <code>dispatchNestedPreScroll</code> offers an opportunity for the parent view in a nested
+	 * scrolling operation to consume some or all of the scroll operation before the child view
+	 * consumes it.</p>
+	 *
+	 * @param dx             Horizontal scroll distance in pixels
+	 * @param dy             Vertical scroll distance in pixels
+	 * @param consumed       Output. If not null, consumed[0] will contain the consumed component of dx
+	 *                       and consumed[1] the consumed dy.
+	 * @param offsetInWindow Optional. If not null, on return this will contain the offset
+	 *                       in local view coordinates of this view from before this operation
+	 *                       to after it completes. View implementations may use this to adjust
+	 *                       expected input coordinate tracking.
+	 * @param type           the type of input which cause this scroll event
+	 * @return true if the parent consumed some or all of the scroll delta
+	 * @see #dispatchNestedScroll(int, int, int, int, int[], int)
+	 */
+	@Override
+	public boolean dispatchNestedPreScroll(int dx, int dy, @Nullable int[] consumed, @Nullable int[] offsetInWindow, int type) {
+		return this.mNestedScrollingChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow, type);
 	}
 
 	/**

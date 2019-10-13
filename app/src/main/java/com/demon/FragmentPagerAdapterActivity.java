@@ -9,7 +9,7 @@ import com.demon.fragment.PageFragment;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.demon.widget.adapter.FragmentPagerAdapter;
+import androidx.demon.widget.adapter.FragmentPagerAdapterCompat;
 import androidx.demon.widget.ViewPagerCompat;
 import androidx.fragment.app.Fragment;
 
@@ -24,13 +24,13 @@ public class FragmentPagerAdapterActivity extends AppCompatActivity {
 		super.onCreate(savedInstanceState);
 		this.setContentView(R.layout.activity_viewpager_2);
 
-		final FragmentPagerAdapter mFragmentPagerAdapter = new FragmentPagerAdapter(this.getSupportFragmentManager()) {
+		final FragmentPagerAdapterCompat mFragmentPagerAdapterCompat = new FragmentPagerAdapterCompat(this.getSupportFragmentManager()) {
 
 			@NonNull
 			@Override
 			public Fragment onCreateFragment(@NonNull ViewGroup container, int position) {
 				// 不需要缓存，直接创建
-				Log.e("FragmentPagerAdapter", "onCreateFragment : " + position);
+				Log.e("FragmentPagerAdapterCompat", "onCreateFragment : " + position);
 				Bundle args = new Bundle();
 				args.putInt("Position", position);
 				Fragment fragment = new PageFragment();
@@ -44,7 +44,7 @@ public class FragmentPagerAdapterActivity extends AppCompatActivity {
 			}
 		};
 		final ViewPagerCompat mViewPagerCompat = findViewById(R.id.viewPagerCompat);
-		mViewPagerCompat.setAdapter(mFragmentPagerAdapter);
+		mViewPagerCompat.setAdapter(mFragmentPagerAdapterCompat);
 		mViewPagerCompat.setScrollingLoop(true);
 	}
 }

@@ -3,14 +3,14 @@ package androidx.demon.widget.helper;
 import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
-import androidx.core.view.NestedScrollingChild;
+import androidx.core.view.NestedScrollingChild2;
 import androidx.core.view.NestedScrollingParent;
 
 /**
  * Author create by ok on 2019-07-19
  * Email : ok@163.com.
  */
-public interface NestedScrollingHelper extends NestedScrollingParent, NestedScrollingChild {
+public interface NestedScrollingHelper extends NestedScrollingParent, NestedScrollingChild2 {
 
 	/**
 	 * Indicates that the pager is in an idle, settled state. The current page
@@ -32,6 +32,8 @@ public interface NestedScrollingHelper extends NestedScrollingParent, NestedScro
 
 	boolean onTouchEvent(@NonNull MotionEvent event);
 
+	boolean isNestedScrollInProgress();
+
 	void addOnScrollListener(@NonNull OnScrollListener listener);
 
 	void removeOnScrollListener(@NonNull OnScrollListener listener);
@@ -47,10 +49,6 @@ public interface NestedScrollingHelper extends NestedScrollingParent, NestedScro
 	void smoothScrollTo(int x, int y);
 
 	void smoothScrollTo(int x, int y, long delayMillis);
-
-	void lockedNestedScroll();
-
-	void unlockedNestedScroll();
 
 	int getPreScrollDirection(int delta);
 

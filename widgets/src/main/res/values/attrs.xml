@@ -74,6 +74,10 @@
             <enum name="bottom" value="4"/>
         </attr>
     </declare-styleable>
+    <declare-styleable name="FixedGridView">
+        <attr name="spanCount" format="integer"/>
+        <attr name="spanGap" format="dimension|reference"/>
+    </declare-styleable>
     <declare-styleable name="FlowLabelView">
         <attr name="android:text"/>
         <attr name="android:textSize"/>

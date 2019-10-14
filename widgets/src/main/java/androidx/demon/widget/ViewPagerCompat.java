@@ -250,6 +250,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	private int mOrientation = HORIZONTAL;
 	private boolean mIsScrollingLoop = false;
 	private boolean mIsAllowUserScrollable = true;
+	private ArrayList<PageIndicator> mPageIndicators;
 
 	@Override
 	protected void onAttachedToWindow() {
@@ -1860,6 +1861,25 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		}
 	}
 
+	public void addPageIndicator(@NonNull PageIndicator playIndicator) {
+		if (this.mPageIndicators == null) {
+			this.mPageIndicators = new ArrayList<>();
+		}
+		if (this.mPageIndicators.indexOf(playIndicator) == -1) {
+			this.mPageIndicators.add(playIndicator);
+			// attachedToParent
+			playIndicator.onAttachedToParent(this);
+		}
+	}
+
+	public void removePageIndicator(@NonNull PageIndicator playIndicator) {
+		if (this.mPageIndicators != null && this.mPageIndicators.indexOf(playIndicator) != -1) {
+			this.mPageIndicators.remove(playIndicator);
+			// detachedFromParent
+			playIndicator.onDetachedFromParent(this);
+		}
+	}
+
 	@OrientationMode
 	public int getOrientation() {
 		return this.mOrientation;
@@ -3008,6 +3028,13 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		float offset;
 		float weight;
 		boolean scrolling;
+	}
+
+	public interface PageIndicator {
+
+		void onAttachedToParent(@NonNull ViewGroup container);
+
+		void onDetachedFromParent(@NonNull ViewGroup container);
 	}
 
 	public interface PageTransformer {

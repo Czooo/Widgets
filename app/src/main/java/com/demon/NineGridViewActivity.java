@@ -27,7 +27,6 @@ import androidx.demon.widget.NineGridView;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
 import androidx.demon.widget.adapter.PagerAdapterCompat;
-import androidx.demon.widget.transformers.HorDepthPageTransformer;
 import androidx.recyclerview.widget.RecyclerView;
 
 /**
@@ -120,14 +119,20 @@ public class NineGridViewActivity extends AppCompatActivity {
 							Log.e("NineGridView", "Playing State " + playState);
 						}
 					});
+//					final int px = 24;
+//					final ViewPagerCompat mViewPagerCompat = mBannerLayout.getViewPagerCompat();
+//					mViewPagerCompat.setPadding(px, 0, px, 0);
+//					mViewPagerCompat.setClipToPadding(false);
+//					mViewPagerCompat.setPageMargin(px);
+
 					// 自动管理生命周期
 					mBannerLayout.setLifecycleOwner(NineGridViewActivity.this);
 					// 滚动方向
 					mBannerLayout.setPlayScrollDirection(BannerLayout.PLAY_SCROLL_DIRECTION_START);
 					// 滚动动画
-					mBannerLayout.setPageTransformer(new HorDepthPageTransformer());
+//					mBannerLayout.setPageTransformer(new HorDepthPageTransformer());
 					// 指示器
-					mBannerLayout.addPlayIndicator(mIndicatorView);
+					mBannerLayout.addPageIndicator(mIndicatorView);
 					// 用户手势操作
 					mBannerLayout.setAllowUserScrollable(true);
 					// 播放间隔时间：毫秒

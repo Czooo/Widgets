@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
 		// 滚动动画
 		mBannerLayout.setPageTransformer(new HorDepthPageTransformer());
 		// 指示器
-		mBannerLayout.addPlayIndicator(mIndicatorView);
+		mBannerLayout.addPageIndicator(mIndicatorView);
 		// 用户手势操作
 		mBannerLayout.setAllowUserScrollable(true);
 		// 播放间隔时间：毫秒

@@ -24,16 +24,16 @@ import androidx.demon.widget.cache.RecycledPool;
  * @Email : 171905184@qq.com
  * @Description :
  */
-public class IndicatorView extends LinearLayout implements BannerLayout.PlayIndicator, ViewPagerCompat.OnAdapterChangeListener {
+public class IndicatorView extends LinearLayout implements ViewPagerCompat.PageIndicator, ViewPagerCompat.OnAdapterChangeListener {
 
 	private final RecycledPool<View> mRecycledPool = new RecycledPool<>();
 
 	private float mIndicatorWeight = 0.f;
+	private int mItemCount = 0;
 	private int mIndicatorMargin = 8;
 	private int mCurrentItemPosition = -1;
 
 	private Adapter mIndicatorAdapter;
-	private ViewPagerCompat.Adapter mBannerAdapter;
 	private OnPageChangeListener mOnPageChangeListener;
 	private AdapterDataSetObserver mAdapterDataSetObserver;
 	private IndicatorDataSetObserver mIndicatorDataSetObserver;
@@ -69,26 +69,26 @@ public class IndicatorView extends LinearLayout implements BannerLayout.PlayIndi
 
 	@Override
 	public void onAttachedToParent(@NonNull ViewGroup container) {
-		final BannerLayout mBannerLayout = (BannerLayout) container;
+		final ViewPagerCompat mViewPagerCompat = (ViewPagerCompat) container;
 		if (this.mOnPageChangeListener == null) {
 			this.mOnPageChangeListener = new OnPageChangeListener();
 		}
-		mBannerLayout.addOnPageChangeListener(this.mOnPageChangeListener);
-		this.dispatchAdapterChanged(null, mBannerLayout.getAdapter());
-		mBannerLayout.addOnAdapterChangeListener(this);
+		mViewPagerCompat.addOnPageChangeListener(this.mOnPageChangeListener);
+		this.dispatchAdapterChanged(null, mViewPagerCompat.getAdapter());
+		mViewPagerCompat.addOnAdapterChangeListener(this);
 	}
 
 	@Override
 	public void onDetachedFromParent(@NonNull ViewGroup container) {
-		final BannerLayout mBannerLayout = (BannerLayout) container;
+		final ViewPagerCompat mViewPagerCompat = (ViewPagerCompat) container;
 		if (this.mOnPageChangeListener != null) {
-			mBannerLayout.removeOnPageChangeListener(this.mOnPageChangeListener);
+			mViewPagerCompat.removeOnPageChangeListener(this.mOnPageChangeListener);
 		}
-		mBannerLayout.removeOnAdapterChangeListener(this);
-		this.dispatchAdapterChanged(mBannerLayout.getAdapter(), null);
+		mViewPagerCompat.removeOnAdapterChangeListener(this);
+		this.dispatchAdapterChanged(mViewPagerCompat.getAdapter(), null);
 		this.performIndicatorRecycled(false);
 		this.mCurrentItemPosition = -1;
-		this.mBannerAdapter = null;
+		this.mItemCount = 0;
 	}
 
 	/**
@@ -135,7 +135,7 @@ public class IndicatorView extends LinearLayout implements BannerLayout.PlayIndi
 		return this.mIndicatorWeight;
 	}
 
-	public int getmIndicatorMargin() {
+	public int getIndicatorMargin() {
 		return this.mIndicatorMargin;
 	}
 
@@ -149,13 +149,12 @@ public class IndicatorView extends LinearLayout implements BannerLayout.PlayIndi
 
 	private void indicatorDataSetChanged() {
 		this.performIndicatorRecycled(true);
-		if (this.mIndicatorAdapter == null || this.mBannerAdapter == null) {
+		if (this.mIndicatorAdapter == null || this.mItemCount <= 0) {
 			return;
 		}
-		final int mItemCount = this.mBannerAdapter.getItemCount();
-		this.mCurrentItemPosition = Math.max(0, Math.min(this.mCurrentItemPosition, mItemCount - 1));
+		this.mCurrentItemPosition = Math.max(0, Math.min(this.mCurrentItemPosition, this.mItemCount - 1));
 
-		for (int position = 0; position < mItemCount; position++) {
+		for (int position = 0; position < this.mItemCount; position++) {
 			View mIndicatorView = this.mRecycledPool.getRecycled(0);
 			if (mIndicatorView == null) {
 				mIndicatorView = this.mIndicatorAdapter.onCreateItemView(LayoutInflater.from(this.getContext()), this, position);
@@ -178,7 +177,7 @@ public class IndicatorView extends LinearLayout implements BannerLayout.PlayIndi
 			if (position == 0) {
 				preLayoutParams.leftMargin = this.mIndicatorMargin;
 				preLayoutParams.rightMargin = this.mIndicatorMargin / 2;
-			} else if (position == mItemCount - 1) {
+			} else if (position == this.mItemCount - 1) {
 				preLayoutParams.leftMargin = this.mIndicatorMargin / 2;
 				preLayoutParams.rightMargin = this.mIndicatorMargin;
 			} else {
@@ -238,7 +237,10 @@ public class IndicatorView extends LinearLayout implements BannerLayout.PlayIndi
 			}
 			newAdapter.registerDataSetObserver(this.mAdapterDataSetObserver);
 		}
-		this.mBannerAdapter = newAdapter;
+		this.mItemCount = 0;
+		if (newAdapter != null) {
+			this.mItemCount = newAdapter.getItemCount();
+		}
 		if (this.mIndicatorAdapter != null) {
 			this.mIndicatorAdapter.notifyDataSetChanged();
 		}

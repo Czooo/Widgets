@@ -11,7 +11,6 @@ import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
@@ -42,7 +41,6 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	private static final int DEFAULT_AUTO_PLAY_DELAY = 2500;
 	private static final int DEFAULT_SCROLLING_DURATION = 600;
 	private ArrayList<OnPlayStateListener> mOnPlayStateListeners;
-	private ArrayList<PlayIndicator> mPlayIndicators;
 	private ViewPagerCompat mViewPagerCompat;
 	private Handler mPlayStateHandler;
 
@@ -297,6 +295,14 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 		this.mViewPagerCompat.setPageTransformer(reverseDrawingOrder, transformer, pageLayerType);
 	}
 
+	public void addPageIndicator(@NonNull ViewPagerCompat.PageIndicator pageIndicator) {
+		this.mViewPagerCompat.addPageIndicator(pageIndicator);
+	}
+
+	public void removePageIndicator(@NonNull ViewPagerCompat.PageIndicator pageIndicator) {
+		this.mViewPagerCompat.removePageIndicator(pageIndicator);
+	}
+
 	public void addOnPageChangeListener(@NonNull ViewPagerCompat.OnPageChangeListener listener) {
 		this.mViewPagerCompat.addOnPageChangeListener(listener);
 	}
@@ -323,25 +329,6 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 
 	public ViewPagerCompat getViewPagerCompat() {
 		return this.mViewPagerCompat;
-	}
-
-	public void addPlayIndicator(@NonNull PlayIndicator playIndicator) {
-		if (this.mPlayIndicators == null) {
-			this.mPlayIndicators = new ArrayList<>();
-		}
-		if (this.mPlayIndicators.indexOf(playIndicator) == -1) {
-			this.mPlayIndicators.add(playIndicator);
-			// attachedToParent
-			playIndicator.onAttachedToParent(this);
-		}
-	}
-
-	public void removePlayIndicator(@NonNull PlayIndicator playIndicator) {
-		if (this.mPlayIndicators != null && this.mPlayIndicators.indexOf(playIndicator) != -1) {
-			this.mPlayIndicators.remove(playIndicator);
-			// detachedFromParent
-			playIndicator.onDetachedFromParent(this);
-		}
 	}
 
 	public void setPlayScrollDirection(int direction) {
@@ -420,13 +407,6 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	public interface OnPlayStateListener {
 
 		void onPlayStateChanged(@NonNull BannerLayout container, int playState);
-	}
-
-	public interface PlayIndicator {
-
-		void onAttachedToParent(@NonNull ViewGroup container);
-
-		void onDetachedFromParent(@NonNull ViewGroup container);
 	}
 
 	public static class SavedState extends AbsSavedState {

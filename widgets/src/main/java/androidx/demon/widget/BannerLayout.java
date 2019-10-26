@@ -9,6 +9,7 @@ import android.os.Message;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RelativeLayout;
@@ -30,6 +31,9 @@ import androidx.lifecycle.OnLifecycleEvent;
  */
 public class BannerLayout extends RelativeLayout implements Handler.Callback, LifecycleObserver {
 
+	private static final boolean DEBUG = false;
+	private static final String TAG = "BannerLayout";
+
 	public static final int FLAG_STATE_NONE = 0;
 	public static final int FLAG_STATE_START = 1;
 	public static final int FLAG_STATE_PLAYING = 2;
@@ -38,15 +42,15 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	public static final int PLAY_SCROLL_DIRECTION_START = 0;
 	public static final int PLAY_SCROLL_DIRECTION_END = 1;
 
-	private static final int DEFAULT_AUTO_PLAY_DELAY = 2500;
-	private static final int DEFAULT_SCROLLING_DURATION = 600;
+	private static final int DEFAULT_SETTLE_DURATION= 850;
+	private static final int DEFAULT_AUTO_PLAY_DELAY = 2800;
 	private ArrayList<OnPlayStateListener> mOnPlayStateListeners;
 	private ViewPagerCompat mViewPagerCompat;
 	private Handler mPlayStateHandler;
 
 	private int mCurPlayState = FLAG_STATE_NONE;
 	private int mPlayScrollDirection = PLAY_SCROLL_DIRECTION_START;
-	private long mAutoPlayDelayMillis = DEFAULT_AUTO_PLAY_DELAY;
+	private int mAutoPlayDelayMillis = DEFAULT_AUTO_PLAY_DELAY;
 
 	public BannerLayout(Context context) {
 		this(context, null);
@@ -67,8 +71,8 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 		final TypedArray mTypedArray = context.obtainStyledAttributes(attrs, R.styleable.BannerLayout);
 		final int mOrientation = mTypedArray.getInt(R.styleable.BannerLayout_android_orientation, ViewPagerCompat.HORIZONTAL);
 		final int mScrollDirection = mTypedArray.getInt(R.styleable.BannerLayout_bannerScrollDirection, this.mPlayScrollDirection);
-		final int mScrollingDuration = mTypedArray.getInteger(R.styleable.BannerLayout_bannerScrollingDuration, DEFAULT_SCROLLING_DURATION);
-		final int mAutoPlayDelayMillis = mTypedArray.getInteger(R.styleable.BannerLayout_bannerAutoPlayDelayMillis, DEFAULT_AUTO_PLAY_DELAY);
+		final int mScrollingDuration = mTypedArray.getInteger(R.styleable.BannerLayout_bannerScrollingDuration, DEFAULT_SETTLE_DURATION);
+		final int mAutoPlayDelayMillis = mTypedArray.getInteger(R.styleable.BannerLayout_bannerAutoPlayDelayMillis, this.mAutoPlayDelayMillis);
 		final int mOffscreenPageLimit = mTypedArray.getInteger(R.styleable.BannerLayout_bannerOffscreenPageLimit, 1);
 		final int mPageMargin = mTypedArray.getDimensionPixelOffset(R.styleable.BannerLayout_bannerPageMargin, 0);
 		final boolean mShouldAutoPlaying = mTypedArray.getBoolean(R.styleable.BannerLayout_bannerShouldAutoPlaying, true);
@@ -162,6 +166,7 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 	private boolean mIsShouldPlayFlags = true;
 	private boolean mIsShouldAutoPlayFlags = true;
 	private boolean mIsShouldPlayInProgress = false;
+	private long mCurrentSystemTimeMillis = 0L;
 
 	@Override
 	public synchronized boolean handleMessage(Message msg) {
@@ -186,7 +191,7 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 							this.mIsShouldPlayInProgress = this.mViewPagerCompat.pageStart();
 						}
 						if (positionByBefore == this.mViewPagerCompat.getCurrentLayoutItem()) {
-							autoPlayDelayMillis = 0L;
+							autoPlayDelayMillis = 100L;
 						}
 						this.mIsShouldPlayInProgress &= this.mIsShouldAutoPlayFlags;
 					} else {
@@ -195,6 +200,11 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 					break;
 			}
 			if (this.mIsShouldPlayInProgress &= this.mIsShouldPlayFlags) {
+				if (DEBUG) {
+					Log.i(TAG, "BannerLayout time delta : " +
+							(this.mCurrentSystemTimeMillis - System.currentTimeMillis()));
+				}
+				this.mCurrentSystemTimeMillis = System.currentTimeMillis();
 				this.nextPlay(autoPlayDelayMillis);
 			} else {
 				this.stopPlay();
@@ -293,14 +303,6 @@ public class BannerLayout extends RelativeLayout implements Handler.Callback, Li
 
 	public void setPageTransformer(boolean reverseDrawingOrder, @Nullable ViewPagerCompat.PageTransformer transformer, int pageLayerType) {
 		this.mViewPagerCompat.setPageTransformer(reverseDrawingOrder, transformer, pageLayerType);
-	}
-
-	public void addPageIndicator(@NonNull ViewPagerCompat.PageIndicator pageIndicator) {
-		this.mViewPagerCompat.addPageIndicator(pageIndicator);
-	}
-
-	public void removePageIndicator(@NonNull ViewPagerCompat.PageIndicator pageIndicator) {
-		this.mViewPagerCompat.removePageIndicator(pageIndicator);
 	}
 
 	public void addOnPageChangeListener(@NonNull ViewPagerCompat.OnPageChangeListener listener) {

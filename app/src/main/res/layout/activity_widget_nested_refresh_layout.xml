@@ -53,6 +53,20 @@
                     app:scrollFlag="end"/>
             </androidx.demon.widget.RefreshLayout>
 
+            <androidx.demon.widget.ViewPagerCompat
+                android:id="@+id/viewPagerCompat"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginBottom="12dp"
+                android:layout_marginTop="12dp"/>
+
+            <androidx.viewpager.widget.ViewPager
+                android:id="@+id/viewPager2"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginBottom="12dp"
+                android:layout_marginTop="12dp"/>
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="300dp"

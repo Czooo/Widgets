@@ -235,11 +235,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				int dx = (int) (this.mLastTouchMotionX - x + 0.5F);
 				int dy = (int) (this.mLastTouchMotionY - y + 0.5F);
 
-//				if (this.dispatchNestedPreScroll(dx, dy, this.mScrollConsumed, this.mScrollOffset)) {
-//					dx -= this.mScrollConsumed[0];
-//					dy -= this.mScrollConsumed[1];
-//				}
-
 				// Now check start dragging
 				if (!this.mIsBeingDragged) {
 					final int dxDiff = Math.abs(dx);
@@ -263,6 +258,10 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				if (!this.mIsBeingDragged) {
 					return false;
 				}
+//				if (this.dispatchNestedPreScroll(dx, dy, this.mScrollConsumed, this.mScrollOffset)) {
+//					dx -= this.mScrollConsumed[0];
+//					dy -= this.mScrollConsumed[1];
+//				}
 				// Not else! Note that mIsBeingDragged can be set above.
 				if (SCROLL_STATE_DRAGGING == this.mScrollState) {
 					this.mLastTouchMotionX = x - this.mScrollOffset[0];

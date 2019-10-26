@@ -22,10 +22,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.demon.widget.BannerLayout;
-import androidx.demon.widget.IndicatorView;
 import androidx.demon.widget.NineGridView;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
+import androidx.demon.widget.ViewPagerCompat;
 import androidx.demon.widget.adapter.PagerAdapterCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -73,9 +73,7 @@ public class NineGridViewActivity extends AppCompatActivity {
 			@Override
 			public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
 				if (0 == position) {
-					final IndicatorView mIndicatorView = holder.itemView.findViewById(R.id.indicatorView);
 					final BannerLayout mBannerLayout = holder.itemView.findViewById(R.id.bannerLayout);
-
 					if (mBannerLayout.getAdapter() != null) {
 						return;
 					}
@@ -119,11 +117,12 @@ public class NineGridViewActivity extends AppCompatActivity {
 							Log.e("NineGridView", "Playing State " + playState);
 						}
 					});
-//					final int px = 24;
-//					final ViewPagerCompat mViewPagerCompat = mBannerLayout.getViewPagerCompat();
-//					mViewPagerCompat.setPadding(px, 0, px, 0);
-//					mViewPagerCompat.setClipToPadding(false);
-//					mViewPagerCompat.setPageMargin(px);
+					mBannerLayout.addOnPageChangeListener(new ViewPagerCompat.SimpleOnPageChangeListener() {
+						@Override
+						public void onPageSelected(int position) {
+							Log.e("NineGridView", "onPageSelected " + position);
+						}
+					});
 
 					// 自动管理生命周期
 					mBannerLayout.setLifecycleOwner(NineGridViewActivity.this);
@@ -131,14 +130,12 @@ public class NineGridViewActivity extends AppCompatActivity {
 					mBannerLayout.setPlayScrollDirection(BannerLayout.PLAY_SCROLL_DIRECTION_START);
 					// 滚动动画
 //					mBannerLayout.setPageTransformer(new HorDepthPageTransformer());
-					// 指示器
-					mBannerLayout.addPageIndicator(mIndicatorView);
 					// 用户手势操作
 					mBannerLayout.setAllowUserScrollable(true);
 					// 播放间隔时间：毫秒
-					mBannerLayout.setAutoPlayDelayMillis(2500);
+//					mBannerLayout.setAutoPlayDelayMillis(3250);
 					// 控件滚动间隔时间：毫秒
-					mBannerLayout.setScrollingDuration(600);
+//					mBannerLayout.setScrollingDuration(850);
 					// 自动循环播放
 					mBannerLayout.setAutoPlayFlags(true);
 					// 资源适配器

@@ -22,9 +22,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.demon.widget.BannerLayout;
-import androidx.demon.widget.IndicatorView;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
+import androidx.demon.widget.ViewPagerCompat;
 import androidx.demon.widget.adapter.PagerAdapterCompat;
 import androidx.demon.widget.helper.NestedScrollingHelper;
 import androidx.demon.widget.transformers.HorDepthPageTransformer;
@@ -75,7 +75,6 @@ public class MainActivity extends AppCompatActivity {
 		data.add("https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=4012045560,650010815&fm=26&gp=0.jpg");
 		data.add("https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=2771670718,331933807&fm=26&gp=0.jpg");
 		final PagerAdapterCompat<PagerAdapterCompat.ViewHolder> mAdapter = new PagerAdapterCompat<PagerAdapterCompat.ViewHolder>() {
-
 			@Override
 			public int getItemCount() {
 				return data.size();
@@ -108,27 +107,23 @@ public class MainActivity extends AppCompatActivity {
 			}
 		};
 		mAdapter.setOnItemClickListener(new PagerAdapterCompat.OnItemClickListener() {
-
 			@Override
 			public void onItemClick(@NonNull ViewGroup container, @NonNull View view, int position) {
 				Toast.makeText(container.getContext(), "Pos " + position, Toast.LENGTH_LONG).show();
 			}
 		});
 
-		final IndicatorView mIndicatorView = this.findViewById(R.id.indicatorView);
 		final BannerLayout mBannerLayout = this.findViewById(R.id.bannerLayout);
 		// 滚动方向
 		mBannerLayout.setPlayScrollDirection(BannerLayout.PLAY_SCROLL_DIRECTION_START);
 		// 滚动动画
 		mBannerLayout.setPageTransformer(new HorDepthPageTransformer());
-		// 指示器
-		mBannerLayout.addPageIndicator(mIndicatorView);
 		// 用户手势操作
 		mBannerLayout.setAllowUserScrollable(true);
 		// 播放间隔时间：毫秒
-		mBannerLayout.setAutoPlayDelayMillis(2500);
+//		mBannerLayout.setAutoPlayDelayMillis(3250);
 		// 控件滚动间隔时间：毫秒
-		mBannerLayout.setScrollingDuration(600);
+//		mBannerLayout.setScrollingDuration(850);
 		// 自动管理生命周期
 		mBannerLayout.setLifecycleOwner(this);
 		// 自动循环播放
@@ -137,7 +132,12 @@ public class MainActivity extends AppCompatActivity {
 		mBannerLayout.setAdapter(mAdapter);
 		// 开始循环播放
 		mBannerLayout.startPlay();
-
+		mBannerLayout.addOnPageChangeListener(new ViewPagerCompat.SimpleOnPageChangeListener() {
+			@Override
+			public void onPageSelected(int position) {
+				Log.e("Adapter", "onPageSelected " + mBannerLayout.isShouldPlayInProgress() + " => " + position);
+			}
+		});
 		mBannerLayout.addOnPlayStateListener(new BannerLayout.OnPlayStateListener() {
 			@Override
 			public void onPlayStateChanged(@NonNull BannerLayout container, int playState) {
@@ -194,11 +194,11 @@ public class MainActivity extends AppCompatActivity {
 						startActivity(new Intent(MainActivity.this, CalendarViewActivity.class));
 					}
 				});
-		this.findViewById(R.id.joinFlowLabelView)
+		this.findViewById(R.id.joinFixedGridView)
 				.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
-//						startActivity(new Intent(MainActivity.this, TMActivity.class));
+						startActivity(new Intent(MainActivity.this, FixedGridViewActivity.class));
 					}
 				});
 	}

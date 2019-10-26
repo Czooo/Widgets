@@ -86,10 +86,10 @@
                 android:textAllCaps="false"/>
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/joinFlowLabelView"
+                android:id="@+id/joinFixedGridView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="FlowLabelView"
+                android:text="FixedGridView"
                 android:textAllCaps="false"/>
 
             <TextView

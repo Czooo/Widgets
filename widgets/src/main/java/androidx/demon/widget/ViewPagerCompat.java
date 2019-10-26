@@ -111,6 +111,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	private static final int DEFAULT_OFFSCREEN_PAGES = 1;
 	private static final int DEFAULT_GUTTER_SIZE = 16; // dips
 	private static final int DEFAULT_CLOSE_ENOUGH = 2; // dips
+	private static final int MIN_SETTLE_DURATION = 350; // ms
 	private static final int MAX_SETTLE_DURATION = 850; // ms
 	private static final int MIN_DISTANCE_FOR_FLING = 25; // dips
 	private static final int MIN_FLING_VELOCITY_VERTICAL = 400; // dips
@@ -138,7 +139,10 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 
 	private int mMinimumVelocity;
 	private int mMaximumVelocity;
+	private int mMinSettleDuration; //MIN_SETTLE_DURATION
+	private int mMaxSettleDuration; //MAX_SETTLE_DURATION
 	private int mScrollingDuration;
+	private float mScrollDeltaRatio = 0.3F;
 	private Scroller mScroller;
 	private EdgeEffect mStartEdgeEffect;
 	private EdgeEffect mEndEdgeEffect;
@@ -152,6 +156,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		this.mTouchSlop = mViewConfiguration.getScaledTouchSlop();
 		this.mMinimumVelocity = mViewConfiguration.getScaledMinimumFlingVelocity();
 		this.mMaximumVelocity = mViewConfiguration.getScaledMaximumFlingVelocity();
+		this.mMinSettleDuration = MIN_SETTLE_DURATION;
+		this.mMaxSettleDuration = MAX_SETTLE_DURATION;
 
 		final float density = context.getResources().getDisplayMetrics().density;
 		this.mGutterSize = (int) (DEFAULT_GUTTER_SIZE * density);
@@ -172,6 +178,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		final int mOrientation = mTypedArray.getInt(R.styleable.ViewPagerCompat_android_orientation, this.mOrientation);
 		final int mPageLimit = mTypedArray.getInt(R.styleable.ViewPagerCompat_pageLimit, this.mOffscreenPageLimit);
 		final int mScrollingDuration = mTypedArray.getInt(R.styleable.ViewPagerCompat_scrollingDuration, this.mScrollingDuration);
+		final int mMinSettleDuration = mTypedArray.getInt(R.styleable.ViewPagerCompat_minSettleDuration, this.mMinSettleDuration);
+		final int mMaxSettleDuration = mTypedArray.getInt(R.styleable.ViewPagerCompat_maxSettleDuration, this.mMaxSettleDuration);
 		final boolean mScrollingLoop = mTypedArray.getBoolean(R.styleable.ViewPagerCompat_scrollingLoop, this.mIsScrollingLoop);
 		final boolean mAllowUserScrollable = mTypedArray.getBoolean(R.styleable.ViewPagerCompat_scrollingInAllowUser, this.mIsAllowUserScrollable);
 		mTypedArray.recycle();
@@ -180,6 +188,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		this.setScrollingLoop(mScrollingLoop);
 		this.setOffscreenPageLimit(mPageLimit);
 		this.setScrollingDuration(mScrollingDuration);
+		this.setMinSettleDuration(mMinSettleDuration);
+		this.setMaxSettleDuration(mMaxSettleDuration);
 		this.setAllowUserScrollable(mAllowUserScrollable);
 
 		ViewCompat.setAccessibilityDelegate(this, new AccessibilityDelegate());
@@ -250,7 +260,6 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	private int mOrientation = HORIZONTAL;
 	private boolean mIsScrollingLoop = false;
 	private boolean mIsAllowUserScrollable = true;
-	private ArrayList<PageIndicator> mPageIndicators;
 
 	@Override
 	protected void onAttachedToWindow() {
@@ -260,11 +269,12 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 
 	@Override
 	protected void onDetachedFromWindow() {
-		this.removeCallbacks(this.mCompleteScrollRunnable);
 		// To be on the safe side, abort the scroller
 		if ((this.mScroller != null) && !this.mScroller.isFinished()) {
+			this.setCurrentItemInternal(this.getCurrentItem(), false, true);
 			this.mScroller.abortAnimation();
 		}
+		this.removeCallbacks(this.mCompleteScrollRunnable);
 		super.onDetachedFromWindow();
 	}
 
@@ -456,7 +466,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		this.mDecorChildCount = decorCount;
 
 		if (this.mFirstLayout) {
-			this.scrollToItem(this.mCurrentPosition, false, 0, false);
+			this.scrollToItem(this.mCurrentPosition, false, 0, 0, false);
 		} else {
 			this.pageScrolled(mScrollX, mScrollY);
 		}
@@ -509,13 +519,13 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				final int restoreCount = canvas.save();
 				if (VERTICAL == this.mOrientation) {
 					final int translateX = -width + (clipToPadding ? this.getPaddingLeft() : 0);
-					final int translateY = (this.getScrollY() + height) + (clipToPadding ? this.getPaddingTop() : -this.getPaddingTop());
+					final int translateY = (this.getScrollY() + height) + (clipToPadding ? this.getPaddingTop() : 0);
 					canvas.translate(translateX, translateY);
 					canvas.rotate(180, width, 0);
 					this.mEndEdgeEffect.setSize(width, height);
 				} else {
 					final int translateX = (clipToPadding ? this.getPaddingTop() : 0);
-					final int translateY = -(this.getScrollX() + width) + (clipToPadding ? -this.getPaddingLeft() : this.getPaddingLeft());
+					final int translateY = -(this.getScrollX() + width) + (clipToPadding ? -this.getPaddingLeft() : 0);
 					canvas.rotate(90);
 					canvas.translate(translateX, translateY);
 					this.mEndEdgeEffect.setSize(height, width);
@@ -676,8 +686,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		final Parcelable mParcelable = super.onSaveInstanceState();
 		final SavedState mSavedState = new SavedState(mParcelable);
 		final Bundle mSaveInstanceState = new Bundle();
-		if (mAdapter != null) {
-			mAdapter.onSaveInstanceState(mSaveInstanceState);
+		if (this.mAdapter != null) {
+			this.mAdapter.onSaveInstanceState(mSaveInstanceState);
 		}
 		mSavedState.position = this.mCurrentPosition;
 		mSavedState.orientation = this.mOrientation;
@@ -855,7 +865,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	@Override
 	public void computeScroll() {
 		this.mIsScrollStarted = true;
-		if (!this.mScroller.isFinished() && this.mScroller.computeScrollOffset()) {
+		if (!this.mScroller.isFinished()
+				&& this.mScroller.computeScrollOffset()) {
 			final int oldScrollX = this.getScrollX();
 			final int oldScrollY = this.getScrollY();
 			final int x = this.mScroller.getCurrX();
@@ -863,42 +874,10 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 
 			int unconsumedX = (x - oldScrollX);
 			int unconsumedY = (y - oldScrollY);
-
-			// Nested Scrolling Pre Pass
-//			this.mScrollConsumed[0] = 0;
-//			this.mScrollConsumed[1] = 0;
-//			if (this.dispatchNestedPreScroll(unconsumedX, unconsumedY, this.mScrollConsumed, null)) {
-//				unconsumedX -= this.mScrollConsumed[0];
-//				unconsumedY -= this.mScrollConsumed[1];
-//			}
-
 			if (unconsumedX != 0 || unconsumedY != 0) {
 				final int curScrollX = oldScrollX + unconsumedX;
 				final int curScrollY = oldScrollY + unconsumedY;
 				this.scrollTo(curScrollX, curScrollY);
-
-				// Nested Scrolling Pre Pass
-//				this.mScrollConsumed[0] = 0;
-//				this.mScrollConsumed[1] = 0;
-//				final int scrolledDeltaX = (this.getScrollX() - oldScrollX);
-//				final int scrolledDeltaY = (this.getScrollY() - oldScrollY);
-//				unconsumedX -= scrolledDeltaX;
-//				unconsumedY -= scrolledDeltaY;
-//				this.dispatchNestedScroll(scrolledDeltaX, scrolledDeltaY, unconsumedX, unconsumedY, this.mScrollConsumed);
-//				unconsumedX -= this.mScrollConsumed[0];
-//				unconsumedY -= this.mScrollConsumed[1];
-//
-//				if (unconsumedX != 0 || unconsumedY != 0) {
-//					if (unconsumedX < 0 || unconsumedY < 0) {
-//						if (this.mStartEdgeEffect.isFinished()) {
-//							this.mStartEdgeEffect.onAbsorb((int) this.mScroller.getCurrVelocity());
-//						}
-//					} else {
-//						if (this.mEndEdgeEffect.isFinished()) {
-//							this.mEndEdgeEffect.onAbsorb((int) this.mScroller.getCurrVelocity());
-//						}
-//					}
-//				}
 
 				if (VERTICAL == this.mOrientation) {
 					if (!this.pageScrolled(0, curScrollY)) {
@@ -1076,7 +1055,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			return true;
 		}
 		if (this.mIsScrollingLoop) {
-			this.setCurrentItem(this.mCurrentPosition - 1, true);
+			this.setCurrentItemInternal(this.mCurrentPosition - 1, true, false);
 			return true;
 		} else {
 			if (this.mCurrentPosition > 0) {
@@ -1096,7 +1075,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			return true;
 		}
 		if (this.mIsScrollingLoop) {
-			this.setCurrentItem(this.mCurrentPosition + 1, true);
+			this.setCurrentItemInternal(this.mCurrentPosition + 1, true, false);
 			return true;
 		} else {
 			if (this.mCurrentPosition < (this.mAdapter.getItemCount() - 1)) {
@@ -1125,7 +1104,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		}
 		final int mActionMasked = event.getActionMasked();
 		// Always take care of the touch gesture being complete.
-		if (mActionMasked == MotionEvent.ACTION_CANCEL || mActionMasked == MotionEvent.ACTION_UP) {
+		if (mActionMasked == MotionEvent.ACTION_CANCEL
+				|| mActionMasked == MotionEvent.ACTION_UP) {
 			// Release the drag.
 			this.resetTouch();
 			return false;
@@ -1155,9 +1135,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 					this.mScroller.abortAnimation();
 					this.mPopulatePending = false;
 					this.populate();
-					// dragging
-					this.requestParentDisallowInterceptTouchEvent(true);
 					this.mIsBeingDragged = true;
+					this.requestParentDisallowInterceptTouchEvent(true);
 					this.setScrollState(SCROLL_STATE_DRAGGING);
 				} else {
 					this.completeScroll(false);
@@ -1171,7 +1150,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				break;
 			case MotionEvent.ACTION_MOVE:
 				final int mPointerIndex = event.findPointerIndex(this.mActivePointerId);
-				if (mPointerIndex == -1) {
+				if (mPointerIndex == INVALID_POINTER) {
 					break;
 				}
 
@@ -1193,27 +1172,26 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 					return false;
 				}
 
-				if ((VERTICAL == this.mOrientation && yDiff > this.mTouchSlop && yDiff * 0.5f > xDiff)
-						|| (HORIZONTAL == this.mOrientation && xDiff > this.mTouchSlop && xDiff * 0.5f > yDiff)) {
-					this.requestParentDisallowInterceptTouchEvent(true);
+				if (VERTICAL == this.mOrientation
+						&& yDiff > this.mTouchSlop && yDiff * 0.5f > xDiff) {
 					this.mIsBeingDragged = true;
-					this.mTouchMotionX = dx > 0 ? this.mTouchMotionX + this.mTouchSlop : this.mTouchMotionX - this.mTouchSlop;
-					this.mTouchMotionY = dy > 0 ? this.mTouchMotionY + this.mTouchSlop : this.mTouchMotionY - this.mTouchSlop;
-					this.setScrollState(SCROLL_STATE_DRAGGING);
-					this.setScrollingCacheEnabled(true);
+					this.mTouchMotionX = x;
+					this.mTouchMotionY = dy > 0 ? this.mInitialMotionY + this.mTouchSlop : this.mInitialMotionY - this.mTouchSlop;
+				} else if (HORIZONTAL == this.mOrientation
+						&& xDiff > this.mTouchSlop && xDiff * 0.5f > yDiff) {
+					this.mIsBeingDragged = true;
+					this.mTouchMotionX = dx > 0 ? this.mInitialMotionX + this.mTouchSlop : this.mInitialMotionX - this.mTouchSlop;
+					this.mTouchMotionY = y;
 				} else if ((VERTICAL == this.mOrientation && xDiff > this.mTouchSlop)
 						|| (HORIZONTAL == this.mOrientation && yDiff > this.mTouchSlop)) {
 					this.mIsUnableToDrag = true;
 				}
-
 				if (this.mIsBeingDragged) {
-					final float deltaX = this.mTouchMotionX - x;
-					final float deltaY = this.mTouchMotionY - y;
-					this.mTouchMotionX = x;
-					this.mTouchMotionY = y;
-
+					this.requestParentDisallowInterceptTouchEvent(true);
+					this.setScrollState(SCROLL_STATE_DRAGGING);
+					this.setScrollingCacheEnabled(true);
 					// Scroll to follow the motion event
-					if (this.performDrag(x, y, deltaX, deltaY)) {
+					if (this.performDrag(x, y)) {
 						ViewCompat.postInvalidateOnAnimation(this);
 					}
 				}
@@ -1263,24 +1241,31 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			case MotionEvent.ACTION_MOVE:
 				if (!this.mIsBeingDragged) {
 					final int mPointerIndex = event.findPointerIndex(this.mActivePointerId);
-					if (mPointerIndex == -1) {
+					if (mPointerIndex == INVALID_POINTER) {
 						mNeedsInvalidate = this.resetTouch();
 						break;
 					}
 
 					final float x = event.getX(mPointerIndex);
 					final float y = event.getY(mPointerIndex);
-					final float dx = x - this.mTouchMotionX;
-					final float dy = y - this.mTouchMotionY;
-					final float xDiff = Math.abs(dx);
-					final float yDiff = Math.abs(dy);
+					final float xDiff = Math.abs(x - this.mTouchMotionX);
+					final float yDiff = Math.abs(y - this.mTouchMotionY);
 
-					if ((VERTICAL == this.mOrientation && yDiff > this.mTouchSlop && yDiff > xDiff)
-							|| (HORIZONTAL == this.mOrientation && xDiff > this.mTouchSlop && xDiff > yDiff)) {
-						this.requestParentDisallowInterceptTouchEvent(true);
+					if (VERTICAL == this.mOrientation
+							&& yDiff > this.mTouchSlop && yDiff > xDiff) {
 						this.mIsBeingDragged = true;
-						this.mTouchMotionX = dx > 0 ? this.mTouchMotionX + this.mTouchSlop : this.mTouchMotionX - this.mTouchSlop;
-						this.mTouchMotionY = dy > 0 ? this.mTouchMotionY + this.mTouchSlop : this.mTouchMotionY - this.mTouchSlop;
+						this.mTouchMotionX = x;
+						this.mTouchMotionY = y - this.mInitialMotionY > 0 ? this.mInitialMotionY + this.mTouchSlop :
+								this.mInitialMotionY - this.mTouchSlop;
+					} else if (HORIZONTAL == this.mOrientation
+							&& xDiff > this.mTouchSlop && xDiff > yDiff) {
+						this.mIsBeingDragged = true;
+						this.mTouchMotionX = x - this.mInitialMotionX > 0 ? this.mInitialMotionX + this.mTouchSlop :
+								this.mInitialMotionX - this.mTouchSlop;
+						this.mTouchMotionY = y;
+					}
+					if (this.mIsBeingDragged) {
+						this.requestParentDisallowInterceptTouchEvent(true);
 						this.setScrollState(SCROLL_STATE_DRAGGING);
 						this.setScrollingCacheEnabled(true);
 					}
@@ -1290,13 +1275,8 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 					final int mPointerIndex = event.findPointerIndex(this.mActivePointerId);
 					final float x = event.getX(mPointerIndex);
 					final float y = event.getY(mPointerIndex);
-					final float deltaX = this.mTouchMotionX - x;
-					final float deltaY = this.mTouchMotionY - y;
-					this.mTouchMotionX = x;
-					this.mTouchMotionY = y;
-
 					// Scroll to follow the motion event
-					mNeedsInvalidate = this.performDrag(x, y, deltaX, deltaY);
+					mNeedsInvalidate = this.performDrag(x, y);
 				}
 				break;
 			case MotionEvent.ACTION_POINTER_DOWN:
@@ -1312,7 +1292,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				break;
 			case MotionEvent.ACTION_CANCEL:
 				if (this.mIsBeingDragged) {
-					this.scrollToItem(this.mCurrentPosition, true, 0, false);
+					this.scrollToItem(this.mCurrentPosition, true, 0, 0, false);
 					mNeedsInvalidate = this.resetTouch();
 				}
 				break;
@@ -1320,21 +1300,18 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				if (this.mIsBeingDragged) {
 					final VelocityTracker mVelocityTracker = this.mVelocityTracker;
 					mVelocityTracker.computeCurrentVelocity(1000, this.mMaximumVelocity);
-					this.mPopulatePending = true;
 					final int velocityX = (int) (mVelocityTracker.getXVelocity(this.mActivePointerId));
 					final int velocityY = (int) (mVelocityTracker.getYVelocity(this.mActivePointerId));
+
 					final int mActivePointerIndex = event.findPointerIndex(this.mActivePointerId);
-					final float dx = event.getX(mActivePointerIndex);
-					final float dy = event.getY(mActivePointerIndex);
-					final int deltaX = (int) (dx - this.mInitialMotionX);
-					final int deltaY = (int) (dy - this.mInitialMotionY);
-					if (VERTICAL == this.mOrientation) {
-						final int mNextPagePosition = this.determineTargetPage(deltaY, velocityY);
-						this.setCurrentItemInternal(mNextPagePosition, true, true, velocityY);
-					} else {
-						final int mNextPagePosition = this.determineTargetPage(deltaX, velocityX);
-						this.setCurrentItemInternal(mNextPagePosition, true, true, velocityX);
-					}
+					final float x = event.getX(mActivePointerIndex);
+					final float y = event.getY(mActivePointerIndex);
+					final int deltaX = (int) (x - this.mInitialMotionX);
+					final int deltaY = (int) (y - this.mInitialMotionY);
+
+					this.mPopulatePending = true;
+					final int nextPagePosition = this.determineTargetPage(deltaX, deltaY, velocityX, velocityY);
+					this.setCurrentItemInternal(nextPagePosition, true, true, velocityX, velocityY);
 					mNeedsInvalidate = this.resetTouch();
 				}
 				break;
@@ -1351,17 +1328,24 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	private final int[] mScrollOffset = new int[2];
 	private final int[] mScrollConsumed = new int[2];
 
-	private boolean performDrag(float x, float y, float deltaX, float deltaY) {
+	private boolean performDrag(float x, float y) {
+		float deltaX = this.mTouchMotionX - x;
+		float deltaY = this.mTouchMotionY - y;
+		this.mTouchMotionX = x;
+		this.mTouchMotionY = y;
 		// Nested Scrolling Pre Pass
-		this.mScrollConsumed[0] = 0;
-		this.mScrollConsumed[1] = 0;
 		if (this.dispatchNestedPreScroll((int) deltaX, (int) deltaY, this.mScrollConsumed, this.mScrollOffset)) {
 			deltaX -= this.mScrollConsumed[0];
 			deltaY -= this.mScrollConsumed[1];
+			this.mTouchMotionX = x - this.mScrollOffset[0];
+			this.mTouchMotionY = y - this.mScrollOffset[1];
+		}
+		if (VERTICAL == this.mOrientation) {
+			deltaY *= this.mScrollDeltaRatio;
+		} else {
+			deltaX *= this.mScrollDeltaRatio;
 		}
 
-		final int width = this.getClientWidth();
-		final int height = this.getClientHeight();
 		final int oldScrollX = this.getScrollX();
 		final int oldScrollY = this.getScrollY();
 		final float nowScrollX = oldScrollX + deltaX;
@@ -1370,10 +1354,10 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		float nowScroll;
 
 		if (VERTICAL == this.mOrientation) {
-			clientSize = height;
+			clientSize = this.getClientHeight();
 			nowScroll = oldScrollY + deltaY;
 		} else {
-			clientSize = width;
+			clientSize = this.getClientWidth();
 			nowScroll = oldScrollX + deltaX;
 		}
 
@@ -1410,7 +1394,6 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		// Don't lose the rounded component
 		this.mTouchMotionX += nowScrollX - (int) nowScrollX;
 		this.mTouchMotionY += nowScrollY - (int) nowScrollY;
-
 		// Scrolling
 		if (VERTICAL == this.mOrientation) {
 			this.scrollTo(oldScrollX, (int) nowScroll);
@@ -1421,17 +1404,16 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		}
 
 		// Nested Scrolling Pre Pass
-		this.mScrollConsumed[0] = 0;
-		this.mScrollConsumed[1] = 0;
 		final int scrolledDeltaX = (this.getScrollX() - oldScrollX);
 		final int scrolledDeltaY = (this.getScrollY() - oldScrollY);
 		deltaX -= scrolledDeltaX;
 		deltaY -= scrolledDeltaY;
-		this.dispatchNestedScroll(scrolledDeltaX, scrolledDeltaY, (int) deltaX, (int) deltaY, this.mScrollConsumed);
-		this.mTouchMotionX -= this.mScrollOffset[0];
-		this.mTouchMotionY -= this.mScrollOffset[1];
-		deltaX -= this.mScrollConsumed[0];
-		deltaY -= this.mScrollConsumed[1];
+		if (this.dispatchNestedScroll(scrolledDeltaX, scrolledDeltaY, (int) deltaX, (int) deltaY, this.mScrollConsumed)) {
+			deltaX -= this.mScrollConsumed[0];
+			deltaY -= this.mScrollConsumed[1];
+			this.mTouchMotionX = x - this.mScrollOffset[0];
+			this.mTouchMotionY = y - this.mScrollOffset[1];
+		}
 
 		if (startNeedsInvalidate || endNeedsInvalidate) {
 			if (VERTICAL == this.mOrientation) {
@@ -1448,11 +1430,11 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			final float deltaDistance;
 			final float displacement;
 			if (VERTICAL == this.mOrientation) {
-				deltaDistance = deltaY / height;
-				displacement = x / width;
+				deltaDistance = deltaY / this.getMeasuredHeight();
+				displacement = x / this.getMeasuredWidth();
 			} else {
-				deltaDistance = deltaX / width;
-				displacement = y / height;
+				deltaDistance = deltaX / this.getMeasuredWidth();
+				displacement = y / this.getMeasuredHeight();
 			}
 			if (startNeedsInvalidate) {
 				EdgeEffectCompat.onPull(this.mStartEdgeEffect, deltaDistance, displacement);
@@ -1494,13 +1476,17 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				this.getChildAt(index).setLayerType(layerType, null);
 			}
 		}
-		if (this.mScrollState == SCROLL_STATE_IDLE) {
-			this.setCurrentItemInternal(this.getCurrentItem(), false, false);
+		if (this.mIsScrollingLoop) {
+			if (this.mScrollState == SCROLL_STATE_IDLE && this.mAdapter != null) {
+				if (this.mCurrentPosition < 0 || this.mCurrentPosition >= this.mAdapter.getItemCount()) {
+					this.setCurrentItemInternal(this.getCurrentItem(), false, true);
+				}
+			}
 		}
 		this.dispatchOnScrollStateChanged(newState);
 	}
 
-	private int determineTargetPage(int delta, int velocity) {
+	private int determineTargetPage(int deltaX, int deltaY, int velocityX, int velocityY) {
 		final Page page = this.getPagerForCurrentScrollPosition();
 		final int mCurrentScrollPosition = page.position;
 		final int mClientWidth = this.getClientWidth();
@@ -1508,35 +1494,30 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		final int mScrollX = this.getScrollX();
 		final int mScrollY = this.getScrollY();
 
-		int nextPagePosition;
-		if (Math.abs(delta) > this.mFlingDistance && Math.abs(velocity) > this.mMinimumVelocity) {
-			if (velocity > 0) {
-				nextPagePosition = mCurrentScrollPosition;
-			} else {
-				nextPagePosition = delta <= 0 ? mCurrentScrollPosition + 1 : mCurrentScrollPosition - 1;
-			}
-		} else {
-			final float widthMarginOffset = (float) this.mPageMargin / mClientWidth;
-			final float heightMarginOffset = (float) this.mPageMargin / mClientHeight;
-			final float widthPageOffset = (((float) mScrollX / mClientWidth) - page.offset) / (page.weight + widthMarginOffset);
-			final float heightPageOffset = (((float) mScrollY / mClientHeight) - page.offset) / (page.weight + heightMarginOffset);
-			final float truncator = mCurrentScrollPosition >= this.mCurrentPosition ? 0.4f : 0.6f;
+		final float truncator = mCurrentScrollPosition >= this.mCurrentPosition ? 0.4f : 0.6f;
 
-			if (VERTICAL == this.mOrientation) {
-				nextPagePosition = mCurrentScrollPosition + (int) (heightPageOffset + truncator);
+		int nextPagePosition = mCurrentScrollPosition;
+		if (VERTICAL == this.mOrientation) {
+			if (Math.abs(deltaY) > this.mFlingDistance && Math.abs(velocityY) > this.mMinimumVelocity) {
+				nextPagePosition = velocityY > 0 ? mCurrentScrollPosition : mCurrentScrollPosition + 1;
 			} else {
+				final float heightMarginOffset = (float) this.mPageMargin / mClientHeight;
+				final float heightPageOffset = (((float) mScrollY / mClientHeight) - page.offset) / (page.weight + heightMarginOffset);
+				nextPagePosition = mCurrentScrollPosition + (int) (heightPageOffset + truncator);
+			}
+		} else if (HORIZONTAL == this.mOrientation) {
+			if (Math.abs(deltaX) > this.mFlingDistance && Math.abs(velocityX) > this.mMinimumVelocity) {
+				nextPagePosition = velocityX > 0 ? mCurrentScrollPosition : mCurrentScrollPosition + 1;
+			} else {
+				final float widthMarginOffset = (float) this.mPageMargin / mClientWidth;
+				final float widthPageOffset = (((float) mScrollX / mClientWidth) - page.offset) / (page.weight + widthMarginOffset);
 				nextPagePosition = mCurrentScrollPosition + (int) (widthPageOffset + truncator);
 			}
 		}
 		if (this.mPagePool.size() > 0) {
-			// Only let the user target pages we have items for
-			if (this.mIsScrollingLoop) {
-				nextPagePosition = Math.max(this.mCurrentPosition - 1, Math.min(nextPagePosition, this.mCurrentPosition + 1));
-			} else {
-				final Page firstPage = this.mPagePool.get(0);
-				final Page lastPage = this.mPagePool.get(this.mPagePool.size() - 1);
-				nextPagePosition = Math.max(firstPage.position, Math.min(nextPagePosition, lastPage.position));
-			}
+			final Page firstPage = this.mPagePool.get(0);
+			final Page lastPage = this.mPagePool.get(this.mPagePool.size() - 1);
+			nextPagePosition = Math.max(firstPage.position, Math.min(nextPagePosition, lastPage.position));
 		}
 		return nextPagePosition;
 	}
@@ -1861,25 +1842,6 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		}
 	}
 
-	public void addPageIndicator(@NonNull PageIndicator playIndicator) {
-		if (this.mPageIndicators == null) {
-			this.mPageIndicators = new ArrayList<>();
-		}
-		if (this.mPageIndicators.indexOf(playIndicator) == -1) {
-			this.mPageIndicators.add(playIndicator);
-			// attachedToParent
-			playIndicator.onAttachedToParent(this);
-		}
-	}
-
-	public void removePageIndicator(@NonNull PageIndicator playIndicator) {
-		if (this.mPageIndicators != null && this.mPageIndicators.indexOf(playIndicator) != -1) {
-			this.mPageIndicators.remove(playIndicator);
-			// detachedFromParent
-			playIndicator.onDetachedFromParent(this);
-		}
-	}
-
 	@OrientationMode
 	public int getOrientation() {
 		return this.mOrientation;
@@ -1899,8 +1861,31 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		}
 	}
 
+	public void setScrollDeltaRatio(float ratio) {
+		this.mScrollDeltaRatio = ratio;
+	}
+
+	public void setMinSettleDuration(int duration) {
+		this.mMinSettleDuration = duration;
+	}
+
+	public void setMaxSettleDuration(int duration) {
+		this.mMaxSettleDuration = duration;
+	}
+
 	public void setScrollingDuration(int duration) {
-		this.mScrollingDuration = duration;
+		if (this.mScrollingDuration != duration
+				&& duration >= 0) {
+			this.mScrollingDuration = duration;
+		}
+	}
+
+	public int getMinSettleDuration() {
+		return this.mMinSettleDuration;
+	}
+
+	public int getMaxSettleDuration() {
+		return this.mMaxSettleDuration;
 	}
 
 	public int getScrollingDuration() {
@@ -1959,15 +1944,16 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	}
 
 	void setCurrentItemInternal(int position, boolean smoothScroll, boolean always) {
-		this.setCurrentItemInternal(position, smoothScroll, always, 0);
+		this.setCurrentItemInternal(position, smoothScroll, always, 0, 0);
 	}
 
-	void setCurrentItemInternal(int position, boolean smoothScroll, boolean always, int velocity) {
+	void setCurrentItemInternal(int position, boolean smoothScroll, boolean always, int velocityX, int velocityY) {
+		final int currentPosition = this.getCurrentItem();
 		if (this.mAdapter == null || this.mAdapter.getItemCount() <= 0) {
 			this.setScrollingCacheEnabled(false);
 			return;
 		}
-		if (!always && this.mCurrentPosition == position && this.mPagePool.size() != 0) {
+		if (!always && currentPosition == position && this.mPagePool.size() != 0) {
 			this.setScrollingCacheEnabled(false);
 			return;
 		}
@@ -1975,13 +1961,13 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		if (!this.mIsScrollingLoop) {
 			position = Math.max(0, Math.min(position, this.mAdapter.getItemCount() - 1));
 		}
-		final int pageLimit = this.mOffscreenPageLimit;
-		if (position > (this.mCurrentPosition + pageLimit) || position < (this.mCurrentPosition - pageLimit)) {
-			for (int index = 0; index < this.mPagePool.size(); index++) {
-				this.mPagePool.get(index).scrolling = true;
+		if (position > (currentPosition + this.mOffscreenPageLimit)
+				|| position < (currentPosition - this.mOffscreenPageLimit)) {
+			for (Page page : this.mPagePool) {
+				page.scrolling = true;
 			}
 		}
-		final boolean dispatchSelected = this.mCurrentPosition != position;
+		final boolean dispatchSelected = currentPosition != position;
 		if (this.mFirstLayout) {
 			// We don't have any idea how big we are yet and shouldn't have any pages either.
 			// Just set things up and let the pending layout handle things.
@@ -1992,11 +1978,11 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			this.requestLayout();
 		} else {
 			this.populate(position);
-			this.scrollToItem(position, smoothScroll, velocity, dispatchSelected);
+			this.scrollToItem(position, smoothScroll, velocityX, velocityY, dispatchSelected);
 		}
 	}
 
-	void scrollToItem(int position, boolean smoothScroll, int velocity, boolean dispatchSelected) {
+	void scrollToItem(int position, boolean smoothScroll, int velocityX, int velocityY, boolean dispatchSelected) {
 		final Page page = this.getPagerForPosition(position);
 		int destX = 0;
 		int destY = 0;
@@ -2009,8 +1995,12 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				destX = (int) (width * Math.max(this.mFirstOffset, Math.min(page.offset, this.mLastOffset)));
 			}
 		}
+		if (DEBUG) {
+			Log.e(TAG, "scrollToItem " + position + " , " + smoothScroll + " , (" + velocityX + "," + velocityY + ") , " + dispatchSelected + " to ("
+					+ destX + " , " + destY + ")");
+		}
 		if (smoothScroll) {
-			this.smoothScrollTo(destX, destY, velocity);
+			this.smoothScrollTo(destX, destY, velocityX, velocityY);
 		} else {
 			this.completeScroll(false);
 			this.scrollTo(destX, destY);
@@ -2021,7 +2011,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		}
 	}
 
-	void smoothScrollTo(int x, int y, int velocity) {
+	void smoothScrollTo(int x, int y, int velocityX, int velocityY) {
 		if (this.getChildCount() == 0) {
 			// Nothing to do.
 			this.setScrollingCacheEnabled(false);
@@ -2056,36 +2046,32 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		final int height = this.getClientHeight();
 		final int halfWidth = width / 2;
 		final int halfHeight = height / 2;
+
+		final int velocity;
 		final float distance;
 		if (VERTICAL == this.mOrientation) {
+			velocity = velocityY;
 			distance = halfHeight + halfHeight * this.distanceInfluenceForSnapDuration(Math.min(1f, 1.0f * Math.abs(dy) / height));
 		} else {
+			velocity = velocityX;
 			distance = halfWidth + halfWidth * this.distanceInfluenceForSnapDuration(Math.min(1f, 1.0f * Math.abs(dx) / width));
 		}
 
-		final int duration;
+		int duration;
 		if (this.mScrollingDuration > 0) {
 			duration = this.mScrollingDuration;
 		} else {
 			if (Math.abs(velocity) > 0) {
 				duration = 4 * Math.round(1000 * Math.abs(distance / Math.abs(velocity)));
 			} else {
-				final int adapterPosition = this.adapterPositionForPosition(this.mCurrentPosition);
-				final float pageWidth = width * this.mAdapter.getPageWeight(adapterPosition);
-				final float pageHeight = height * this.mAdapter.getPageWeight(adapterPosition);
-				final float pageDelta;
-				if (VERTICAL == this.mOrientation) {
-					pageDelta = (float) Math.abs(dy) / (pageHeight + this.mPageMargin);
-				} else {
-					pageDelta = (float) Math.abs(dx) / (pageWidth + this.mPageMargin);
-				}
-				duration = (int) ((pageDelta + 1) * 100);
+				duration = MAX_SETTLE_DURATION;
 			}
+			duration = Math.max(this.mMinSettleDuration, Math.min(duration, this.mMaxSettleDuration));
 		}
 		// Reset the "scroll started" flag. It will be flipped to true in all places
 		// where we call computeScrollOffset().
 		this.mIsScrollStarted = false;
-		this.mScroller.startScroll(scrollX, scrollY, dx, dy, Math.min(duration, MAX_SETTLE_DURATION));
+		this.mScroller.startScroll(scrollX, scrollY, dx, dy, duration);
 		ViewCompat.postInvalidateOnAnimation(this);
 	}
 
@@ -2096,7 +2082,6 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	}
 
 	private final Runnable mCompleteScrollRunnable = new Runnable() {
-
 		@Override
 		public void run() {
 			ViewPagerCompat.this.setScrollState(SCROLL_STATE_IDLE);
@@ -2162,19 +2147,18 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		final Page page = this.getPagerForCurrentScrollPosition();
 		final int width = this.getClientWidth();
 		final int height = this.getClientHeight();
-		final float pageMargin = this.mPageMargin;
 		final float mPageOffset;
 		final int mOffsetPixels;
 
 		if (VERTICAL == this.mOrientation) {
-			mPageOffset = (((float) y / height) - page.offset) / (page.weight + (pageMargin / height));
-			mOffsetPixels = (int) (mPageOffset * (height + pageMargin));
+			mPageOffset = (((float) y / height) - page.offset) / (page.weight + (float) (this.mPageMargin / height));
+			mOffsetPixels = (int) (mPageOffset * (height + this.mPageMargin));
 		} else {
-			mPageOffset = (((float) x / width) - page.offset) / (page.weight + (pageMargin / width));
-			mOffsetPixels = (int) (mPageOffset * (width + pageMargin));
+			mPageOffset = (((float) x / width) - page.offset) / (page.weight + (float) (this.mPageMargin / width));
+			mOffsetPixels = (int) (mPageOffset * (width + this.mPageMargin));
 		}
 		this.mCalledSuper = false;
-		this.onPageScrolled(page.position, mPageOffset, mOffsetPixels);
+		this.onPageScrolled(this.adapterPositionForPosition(page.position), mPageOffset, mOffsetPixels);
 		if (!this.mCalledSuper) {
 			throw new IllegalStateException("onPageScrolled did not call superclass implementation");
 		}
@@ -2246,7 +2230,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				}
 			}
 		}
-		this.dispatchOnPageScrolled(this.adapterPositionForPosition(position), offset, offsetPixels);
+		this.dispatchOnPageScrolled(position, offset, offsetPixels);
 
 		if (this.mPageTransformer != null) {
 			for (int index = 0; index < this.getChildCount(); index++) {
@@ -3030,13 +3014,6 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		boolean scrolling;
 	}
 
-	public interface PageIndicator {
-
-		void onAttachedToParent(@NonNull ViewGroup container);
-
-		void onDetachedFromParent(@NonNull ViewGroup container);
-	}
-
 	public interface PageTransformer {
 		/**
 		 * Apply a property transformation to the given page.
@@ -3094,7 +3071,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 							  @Nullable Adapter oldAdapter, @Nullable Adapter newAdapter);
 	}
 
-	public static abstract class OnSimplePageChangeListener implements OnPageChangeListener {
+	public static abstract class SimpleOnPageChangeListener implements OnPageChangeListener {
 
 		/**
 		 * This method will be invoked when the current page is scrolled, either as part

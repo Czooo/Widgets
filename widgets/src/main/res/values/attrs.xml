@@ -3,6 +3,8 @@
     <declare-styleable name="ViewPagerCompat">
         <attr name="android:orientation"/>
         <attr name="pageLimit" format="integer|reference"/>
+        <attr name="maxSettleDuration" format="integer|reference"/>
+        <attr name="minSettleDuration" format="integer|reference"/>
         <attr name="scrollingDuration" format="integer|reference"/>
         <attr name="scrollingInAllowUser" format="boolean"/>
         <attr name="scrollingDisabled" format="boolean"/>
@@ -23,22 +25,15 @@
     </declare-styleable>
     <declare-styleable name="IndicatorView">
         <attr name="indicatorWeight" format="float"/>
-        <attr name="indicatorMargin" format="dimension|reference"/>
-        <attr name="defIndicatorWidth" format="dimension|reference"/>
-        <attr name="defIndicatorHeight" format="dimension|reference"/>
-        <attr name="defIndicatorDrawable" format="reference"/>
-        <attr name="defIndicatorSelectedDrawable" format="reference"/>
-        <attr name="defIndicatorUnSelectedDrawable" format="reference"/>
-        <attr name="defIndicatorScaleType" format="enum">
-            <enum name="center" value="0"/>
-            <enum name="center_crop" value="1"/>
-            <enum name="center_inside" value="2"/>
-            <enum name="fit_center" value="3"/>
-            <enum name="fit_start" value="4"/>
-            <enum name="fit_end" value="5"/>
-            <enum name="fit_xy" value="6"/>
-            <enum name="matrix" value="7"/>
-        </attr>
+        <attr name="indicatorWidth" format="dimension|reference"/>
+        <attr name="indicatorHeight" format="dimension|reference"/>
+        <attr name="indicatorInterval" format="dimension|reference"/>
+        <attr name="indicatorSelectedDrawable" format="reference"/>
+        <attr name="indicatorUnSelectedDrawable" format="reference"/>
+        <attr name="indicatorSelectedColor" format="color|reference"/>
+        <attr name="indicatorUnSelectedColor" format="color|reference"/>
+        <attr name="indicatorSelectedAlpha" format="float"/>
+        <attr name="indicatorUnSelectedAlpha" format="float"/>
     </declare-styleable>
     <declare-styleable name="DragRelativeLayout">
         <attr name="android:orientation"/>
@@ -73,10 +68,6 @@
             <enum name="right" value="3"/>
             <enum name="bottom" value="4"/>
         </attr>
-    </declare-styleable>
-    <declare-styleable name="FixedGridView">
-        <attr name="spanCount" format="integer"/>
-        <attr name="spanGap" format="dimension|reference"/>
     </declare-styleable>
     <declare-styleable name="FlowLabelView">
         <attr name="android:text"/>

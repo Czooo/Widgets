@@ -2,429 +2,420 @@ package androidx.demon.widget;
 
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.database.DataSetObservable;
+import android.database.Cursor;
 import android.database.DataSetObserver;
+import android.graphics.Canvas;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
+import android.view.ViewParent;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
+import androidx.annotation.FloatRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.demon.widget.cache.RecycledPool;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.core.view.ViewCompat;
 
 /**
- * @Author create by Zoran on 2019-09-21
+ * @Author create by Zoran on 2019-10-18
  * @Email : 171905184@qq.com
  * @Description :
  */
-public class IndicatorView extends LinearLayout implements ViewPagerCompat.PageIndicator, ViewPagerCompat.OnAdapterChangeListener {
+public class IndicatorView extends View {
 
-	private final RecycledPool<View> mRecycledPool = new RecycledPool<>();
+	private Drawable mSelectedIndicatorDrawable;
+	private Drawable mUnSelectedIndicatorDrawable;
 
-	private float mIndicatorWeight = 0.f;
-	private int mItemCount = 0;
-	private int mIndicatorMargin = 8;
-	private int mCurrentItemPosition = -1;
+	@ColorInt
+	private int mSelectedIndicatorColor = -1;
+	@ColorInt
+	private int mUnSelectedIndicatorColor = -1;
 
-	private Adapter mIndicatorAdapter;
-	private OnPageChangeListener mOnPageChangeListener;
-	private AdapterDataSetObserver mAdapterDataSetObserver;
-	private IndicatorDataSetObserver mIndicatorDataSetObserver;
+	@FloatRange(from = 0.1F, to = 1.F)
+	private float mSelectedIndicatorAlpha = 1.F;
+	@FloatRange(from = 0.1F, to = 1.F)
+	private float mUnSelectedIndicatorAlpha = 1.F;
+
+	// 选中下标
+	private int mCurrentItem = -1;
+	// 游标数量
+	private int mIndicatorCount = 0;
+	// 游标宽度
+	private int mIndicatorWidth = 0;
+	// 游标高度
+	private int mIndicatorHeight = 0;
+	// 游标间隙
+	private int mIndicatorInterval = 10;
 
 	public IndicatorView(Context context) {
 		this(context, null);
 	}
 
-	public IndicatorView(Context context, @Nullable AttributeSet attrs) {
+	public IndicatorView(Context context, AttributeSet attrs) {
 		this(context, attrs, 0);
 	}
 
-	public IndicatorView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+	public IndicatorView(Context context, AttributeSet attrs, int defStyleAttr) {
 		super(context, attrs, defStyleAttr);
-		this.performInit(context, attrs);
-	}
-
-	private void performInit(@NonNull Context context, AttributeSet attrs) {
-		this.setOrientation(HORIZONTAL);
 
 		final TypedArray mTypedArray = context.obtainStyledAttributes(attrs, R.styleable.IndicatorView);
-		this.mIndicatorWeight = mTypedArray.getFloat(R.styleable.IndicatorView_indicatorWeight, this.mIndicatorWeight);
-		this.mIndicatorMargin = mTypedArray.getDimensionPixelOffset(R.styleable.IndicatorView_indicatorMargin, this.mIndicatorMargin);
+		final int mIndicatorWidth = mTypedArray.getDimensionPixelOffset(R.styleable.IndicatorView_indicatorWidth, this.mIndicatorWidth);
+		final int mIndicatorHeight = mTypedArray.getDimensionPixelOffset(R.styleable.IndicatorView_indicatorHeight, this.mIndicatorHeight);
+		final int mIndicatorInterval = mTypedArray.getDimensionPixelOffset(R.styleable.IndicatorView_indicatorInterval, this.mIndicatorInterval);
+		final int mSelectedIndicatorResId = mTypedArray.getResourceId(R.styleable.IndicatorView_indicatorSelectedDrawable, R.drawable.sha_indicator_theme);
+		final int mUnSelectedIndicatorResId = mTypedArray.getResourceId(R.styleable.IndicatorView_indicatorUnSelectedDrawable, R.drawable.sha_indicator_white);
+		final int mSelectedIndicatorColor = mTypedArray.getColor(R.styleable.IndicatorView_indicatorSelectedColor, this.mSelectedIndicatorColor);
+		final int mUnSelectedIndicatorColor = mTypedArray.getColor(R.styleable.IndicatorView_indicatorUnSelectedColor, this.mUnSelectedIndicatorColor);
+		final float mSelectedIndicatorAlpha = mTypedArray.getFloat(R.styleable.IndicatorView_indicatorSelectedAlpha, this.mSelectedIndicatorAlpha);
+		final float mUnSelectedIndicatorAlpha = mTypedArray.getFloat(R.styleable.IndicatorView_indicatorUnSelectedAlpha, this.mUnSelectedIndicatorAlpha);
 		mTypedArray.recycle();
-		// set adapter ?
-		this.setAdapter(new SimpleAdapter(context, attrs));
-	}
 
-	@Override
-	public void addView(View child, int index, ViewGroup.LayoutParams params) {
-		throw new IllegalStateException("prohibit registration of new Views");
-	}
-
-	@Override
-	public void onAttachedToParent(@NonNull ViewGroup container) {
-		final ViewPagerCompat mViewPagerCompat = (ViewPagerCompat) container;
-		if (this.mOnPageChangeListener == null) {
-			this.mOnPageChangeListener = new OnPageChangeListener();
+		this.setWillNotDraw(false);
+		this.setIndicatorWidth(mIndicatorWidth);
+		this.setIndicatorHeight(mIndicatorHeight);
+		this.setIndicatorInterval(mIndicatorInterval);
+		if (mSelectedIndicatorResId != -1) {
+			this.setSelectedIndicatorResources(mSelectedIndicatorResId);
 		}
-		mViewPagerCompat.addOnPageChangeListener(this.mOnPageChangeListener);
-		this.dispatchAdapterChanged(null, mViewPagerCompat.getAdapter());
-		mViewPagerCompat.addOnAdapterChangeListener(this);
+		if (mUnSelectedIndicatorResId != -1) {
+			this.setUnSelectedIndicatorResources(mUnSelectedIndicatorResId);
+		}
+		if (mSelectedIndicatorColor != -1) {
+			this.setSelectedIndicatorColor(mSelectedIndicatorColor);
+		}
+		if (mUnSelectedIndicatorColor != -1) {
+			this.setUnSelectedIndicatorColor(mUnSelectedIndicatorColor);
+		}
+		this.setSelectedIndicatorAlpha(mSelectedIndicatorAlpha);
+		this.setUnSelectedIndicatorAlpha(mUnSelectedIndicatorAlpha);
 	}
 
 	@Override
-	public void onDetachedFromParent(@NonNull ViewGroup container) {
-		final ViewPagerCompat mViewPagerCompat = (ViewPagerCompat) container;
-		if (this.mOnPageChangeListener != null) {
-			mViewPagerCompat.removeOnPageChangeListener(this.mOnPageChangeListener);
+	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		int indicatorWidth = 0;
+		int indicatorHeight = 0;
+
+		if (this.mIndicatorCount > 0) {
+			final Drawable selectedIndicatorDrawable = this.mSelectedIndicatorDrawable;
+			final Drawable unselectedIndicatorDrawable = this.mUnSelectedIndicatorDrawable;
+
+			final int indicatorInterval = this.mIndicatorInterval;
+			int selectedIntrinsicWidth = selectedIndicatorDrawable.getIntrinsicWidth();
+			int selectedIntrinsicHeight = selectedIndicatorDrawable.getIntrinsicHeight();
+			int unselectedIntrinsicWidth = unselectedIndicatorDrawable.getIntrinsicWidth();
+			int unselectedIntrinsicHeight = unselectedIndicatorDrawable.getIntrinsicHeight();
+
+			if (this.mIndicatorWidth > 0) {
+				selectedIntrinsicWidth = this.mIndicatorWidth;
+				unselectedIntrinsicWidth = this.mIndicatorWidth;
+			}
+
+			if (this.mIndicatorHeight > 0) {
+				selectedIntrinsicHeight = this.mIndicatorHeight;
+				unselectedIntrinsicHeight = this.mIndicatorHeight;
+			}
+
+			indicatorWidth = selectedIntrinsicWidth;
+			indicatorHeight = selectedIntrinsicHeight;
+
+			indicatorWidth += unselectedIntrinsicWidth * (this.mIndicatorCount - 1);
+			indicatorHeight = Math.max(unselectedIntrinsicHeight, indicatorHeight);
+			// append indicator interval
+			indicatorWidth += indicatorInterval * (this.mIndicatorCount - 1);
 		}
-		mViewPagerCompat.removeOnAdapterChangeListener(this);
-		this.dispatchAdapterChanged(mViewPagerCompat.getAdapter(), null);
-		this.performIndicatorRecycled(false);
-		this.mCurrentItemPosition = -1;
-		this.mItemCount = 0;
+		this.setMeasuredDimension(MeasureSpec.makeMeasureSpec(indicatorWidth, MeasureSpec.EXACTLY),
+				MeasureSpec.makeMeasureSpec(indicatorHeight, MeasureSpec.EXACTLY));
 	}
 
-	/**
-	 * Called when the adapter for the given view pager has changed.
-	 *
-	 * @param container  ViewPagerCompat where the adapter change has happened
-	 * @param oldAdapter the previously set adapter
-	 * @param newAdapter the newly set adapter
-	 */
 	@Override
-	public void onAdapterChanged(@NonNull ViewPagerCompat container, @Nullable ViewPagerCompat.Adapter oldAdapter, @Nullable ViewPagerCompat.Adapter newAdapter) {
-		this.dispatchAdapterChanged(oldAdapter, newAdapter);
-	}
+	protected void onDraw(Canvas canvas) {
+		super.onDraw(canvas);
 
-	public void setIndicatorWeight(float weight) {
-		this.mIndicatorWeight = weight;
-	}
+		final Drawable selectedIndicatorDrawable = this.mSelectedIndicatorDrawable;
+		final Drawable unselectedIndicatorDrawable = this.mUnSelectedIndicatorDrawable;
 
-	public void setIndicatorMargin(int marginSize) {
-		this.mIndicatorMargin = marginSize;
-	}
+		final int indicatorInterval = this.mIndicatorInterval;
+		int selectedIntrinsicWidth = selectedIndicatorDrawable.getIntrinsicWidth();
+		int selectedIntrinsicHeight = selectedIndicatorDrawable.getIntrinsicHeight();
+		int unselectedIntrinsicWidth = unselectedIndicatorDrawable.getIntrinsicWidth();
+		int unselectedIntrinsicHeight = unselectedIndicatorDrawable.getIntrinsicHeight();
 
-	public void setAdapter(@Nullable Adapter adapter) {
-		if (this.mIndicatorAdapter == adapter) {
-			return;
+		int selectedIndicatorColor = this.mSelectedIndicatorColor;
+		int unselectedIndicatorColor = this.mUnSelectedIndicatorColor;
+
+		if (this.mIndicatorWidth > 0) {
+			selectedIntrinsicWidth = this.mIndicatorWidth;
+			unselectedIntrinsicWidth = this.mIndicatorWidth;
 		}
+		if (this.mIndicatorHeight > 0) {
+			selectedIntrinsicHeight = this.mIndicatorHeight;
+			unselectedIntrinsicHeight = this.mIndicatorHeight;
+		}
+
+		int layoutLeft = 0;
+		int layoutTop = 0;
+		for (int position = 0; position < this.mIndicatorCount; position++) {
+			final @ColorInt int indicatorColor;
+
+			final Drawable drawable;
+			if (position == this.mCurrentItem) {
+				drawable = DrawableCompat.wrap(selectedIndicatorDrawable);
+				drawable.setAlpha((int) (this.mSelectedIndicatorAlpha * 255));
+				drawable.setBounds(layoutLeft, layoutTop,
+						layoutLeft + selectedIntrinsicWidth,
+						layoutTop + selectedIntrinsicHeight);
+				layoutLeft += (selectedIntrinsicWidth + indicatorInterval);
+				indicatorColor = selectedIndicatorColor;
+			} else {
+				drawable = DrawableCompat.wrap(unselectedIndicatorDrawable);
+				drawable.setAlpha((int) (this.mUnSelectedIndicatorAlpha * 255));
+				drawable.setBounds(layoutLeft, layoutTop,
+						layoutLeft + unselectedIntrinsicWidth,
+						layoutTop + unselectedIntrinsicHeight);
+				layoutLeft += (unselectedIntrinsicWidth + indicatorInterval);
+				indicatorColor = unselectedIndicatorColor;
+			}
+			if (indicatorColor != -1) {
+				if (Build.VERSION.SDK_INT == 21) {
+					drawable.setColorFilter(indicatorColor, PorterDuff.Mode.SRC_IN);
+				} else {
+					DrawableCompat.setTint(drawable, indicatorColor);
+				}
+			}
+			drawable.draw(canvas);
+		}
+	}
+
+	@Override
+	protected void onAttachedToWindow() {
+		super.onAttachedToWindow();
+		final ViewParent parent = this.getParent();
+		if (parent instanceof BannerLayout) {
+			this.setupBannerLayout((BannerLayout) parent);
+		}
+	}
+
+	public void setScrollPosition(int position, float positionOffset, int positionOffsetPixels) {
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setIndicatorWidth(int indicatorWidth) {
+		this.mIndicatorWidth = indicatorWidth;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setIndicatorHeight(int indicatorHeight) {
+		this.mIndicatorHeight = indicatorHeight;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setIndicatorCount(int indicatorCount) {
+		this.mIndicatorCount = indicatorCount;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setIndicatorInterval(int indicatorInterval) {
+		this.mIndicatorInterval = indicatorInterval;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setSelectedIndicatorColor(@ColorInt int color) {
+		this.mSelectedIndicatorColor = color;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setUnSelectedIndicatorColor(@ColorInt int color) {
+		this.mUnSelectedIndicatorColor = color;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setSelectedIndicatorResources(@DrawableRes int resId) {
+		this.setSelectedIndicatorDrawable(ContextCompat.getDrawable(this.getContext(), resId));
+	}
+
+	public void setSelectedIndicatorDrawable(@Nullable Drawable drawable) {
+
+		this.mSelectedIndicatorDrawable = drawable;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setUnSelectedIndicatorResources(@DrawableRes int resId) {
+		this.setUnSelectedIndicatorDrawable(ContextCompat.getDrawable(this.getContext(), resId));
+	}
+
+	public void setUnSelectedIndicatorDrawable(@Nullable Drawable drawable) {
+		this.mUnSelectedIndicatorDrawable = drawable;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setSelectedIndicatorAlpha(@FloatRange(from = 0.1F, to = 1.F) float alpha) {
+		this.mSelectedIndicatorAlpha = alpha;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setUnSelectedIndicatorAlpha(@FloatRange(from = 0.1F, to = 1.F) float alpha) {
+		this.mUnSelectedIndicatorAlpha = alpha;
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	public void setCurrentItem(int position) {
+		if (this.mCurrentItem != position && position < this.mIndicatorCount) {
+			this.mCurrentItem = position;
+			ViewCompat.postInvalidateOnAnimation(this);
+		}
+	}
+
+	public int getIndicatorCount() {
+		return this.mIndicatorCount;
+	}
+
+	public int getCurrentItem() {
+		return this.mCurrentItem;
+	}
+
+	private ViewPagerCompat mViewPagerCompat;
+	private ViewPagerCompat.Adapter mIndicatorAdapter;
+	private IndicatorDataSetObserver mIndicatorDataSetObserver;
+	private IndicatorOnPageChangeListener mOnPageChangeListener;
+	private IndicatorOnAdapterChangeListener mOnAdapterChangeListener;
+
+	public void setupBannerLayout(@Nullable BannerLayout bannerLayout) {
+		if (bannerLayout == null) {
+			this.setupViewPagerCompat(null);
+		} else {
+			this.setupViewPagerCompat(bannerLayout.getViewPagerCompat());
+		}
+	}
+
+	public void setupViewPagerCompat(@Nullable ViewPagerCompat viewPager) {
+		if (this.mViewPagerCompat != null) {
+			this.mViewPagerCompat.removeOnAdapterChangeListener(this.mOnAdapterChangeListener);
+			this.mViewPagerCompat.removeOnPageChangeListener(this.mOnPageChangeListener);
+			this.mViewPagerCompat = null;
+		}
+		if (viewPager == null) {
+			this.setPagerAdapter(null);
+		} else {
+			if (this.mOnPageChangeListener == null) {
+				this.mOnPageChangeListener = new IndicatorOnPageChangeListener();
+			}
+			if (this.mOnAdapterChangeListener == null) {
+				this.mOnAdapterChangeListener = new IndicatorOnAdapterChangeListener();
+			}
+			this.mViewPagerCompat = viewPager;
+			this.mViewPagerCompat.addOnPageChangeListener(this.mOnPageChangeListener);
+			this.mViewPagerCompat.addOnAdapterChangeListener(this.mOnAdapterChangeListener);
+			this.setPagerAdapter(this.mViewPagerCompat.getAdapter());
+		}
+	}
+
+	private void setPagerAdapter(@Nullable ViewPagerCompat.Adapter adapter) {
 		if (this.mIndicatorAdapter != null) {
-			this.performIndicatorRecycled(false);
-			this.mIndicatorAdapter.setViewPagerObserver(null);
-			this.mCurrentItemPosition = -1;
+			this.mIndicatorAdapter.unregisterDataSetObserver(this.mIndicatorDataSetObserver);
 		}
 		this.mIndicatorAdapter = adapter;
-
 		if (this.mIndicatorAdapter != null) {
 			if (this.mIndicatorDataSetObserver == null) {
 				this.mIndicatorDataSetObserver = new IndicatorDataSetObserver();
 			}
-			this.mIndicatorAdapter.setViewPagerObserver(this.mIndicatorDataSetObserver);
-			this.mIndicatorAdapter.notifyDataSetChanged();
+			this.mIndicatorAdapter.registerDataSetObserver(this.mIndicatorDataSetObserver);
 		}
+		this.populateFromAdapter();
 	}
 
-	public float getIndicatorWeight() {
-		return this.mIndicatorWeight;
-	}
-
-	public int getIndicatorMargin() {
-		return this.mIndicatorMargin;
-	}
-
-	public Adapter getAdapter() {
-		return this.mIndicatorAdapter;
-	}
-
-	public RecycledPool<View> getRecycledPool() {
-		return this.mRecycledPool;
-	}
-
-	private void indicatorDataSetChanged() {
-		this.performIndicatorRecycled(true);
-		if (this.mIndicatorAdapter == null || this.mItemCount <= 0) {
-			return;
-		}
-		this.mCurrentItemPosition = Math.max(0, Math.min(this.mCurrentItemPosition, this.mItemCount - 1));
-
-		for (int position = 0; position < this.mItemCount; position++) {
-			View mIndicatorView = this.mRecycledPool.getRecycled(0);
-			if (mIndicatorView == null) {
-				mIndicatorView = this.mIndicatorAdapter.onCreateItemView(LayoutInflater.from(this.getContext()), this, position);
-			}
-			if (mIndicatorView.getParent() != null) {
-				throw new IllegalStateException("View " + mIndicatorView + " has parent exist");
-			}
-			final ViewGroup.LayoutParams mLayoutParams = mIndicatorView.getLayoutParams();
-			LayoutParams preLayoutParams;
-			if (mLayoutParams == null) {
-				preLayoutParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-			} else if (!this.checkLayoutParams(mLayoutParams)) {
-				preLayoutParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-			} else {
-				preLayoutParams = (LayoutParams) mLayoutParams;
-			}
-			preLayoutParams.gravity = Gravity.CENTER;
-			preLayoutParams.weight = this.mIndicatorWeight;
-			// direction : Vertical
-			if (position == 0) {
-				preLayoutParams.leftMargin = this.mIndicatorMargin;
-				preLayoutParams.rightMargin = this.mIndicatorMargin / 2;
-			} else if (position == this.mItemCount - 1) {
-				preLayoutParams.leftMargin = this.mIndicatorMargin / 2;
-				preLayoutParams.rightMargin = this.mIndicatorMargin;
-			} else {
-				preLayoutParams.leftMargin = this.mIndicatorMargin / 2;
-				preLayoutParams.rightMargin = this.mIndicatorMargin / 2;
-			}
-			super.addView(mIndicatorView, -1, preLayoutParams);
-			// bind
-			this.mIndicatorAdapter.onBindItemView(this, mIndicatorView, this.mCurrentItemPosition == position, position);
-		}
-	}
-
-	private void performIndicatorChanged(int position) {
-		if (this.mIndicatorAdapter == null) {
-			return;
-		}
-		if (this.mCurrentItemPosition != position) {
-			View mIndicatorView = this.getChildAt(position);
-			// selected new position
-			if (mIndicatorView != null) {
-				this.mIndicatorAdapter.onBindItemView(this, mIndicatorView, true, position);
-			}
-			// unselected old position
-			if (this.mCurrentItemPosition >= 0) {
-				mIndicatorView = this.getChildAt(this.mCurrentItemPosition);
-				if (mIndicatorView != null) {
-					this.mIndicatorAdapter.onBindItemView(this, mIndicatorView, false, this.mCurrentItemPosition);
-				}
-			}
-			this.mCurrentItemPosition = position;
-		}
-	}
-
-	private void performIndicatorRecycled(boolean recycled) {
-		for (int index = 0; index < this.getChildCount(); index++) {
-			final View mIndicatorView = this.getChildAt(index);
-			this.removeView(mIndicatorView);
-			this.mRecycledPool.putRecycled(0, mIndicatorView);
-			index--;
-		}
-		// recycled views
-		if (!recycled) {
-			this.mRecycledPool.clear();
-			this.removeAllViews();
-		}
-	}
-
-	private void dispatchAdapterChanged(@Nullable ViewPagerCompat.Adapter oldAdapter, @Nullable ViewPagerCompat.Adapter newAdapter) {
-		if (oldAdapter != null) {
-			if (this.mAdapterDataSetObserver != null) {
-				oldAdapter.unregisterDataSetObserver(this.mAdapterDataSetObserver);
-			}
-		}
-		if (newAdapter != null) {
-			if (this.mAdapterDataSetObserver == null) {
-				this.mAdapterDataSetObserver = new AdapterDataSetObserver();
-			}
-			newAdapter.registerDataSetObserver(this.mAdapterDataSetObserver);
-		}
-		this.mItemCount = 0;
-		if (newAdapter != null) {
-			this.mItemCount = newAdapter.getItemCount();
-		}
+	private void populateFromAdapter() {
+		this.mIndicatorCount = 0;
 		if (this.mIndicatorAdapter != null) {
-			this.mIndicatorAdapter.notifyDataSetChanged();
+			this.mIndicatorCount = this.mIndicatorAdapter.getItemCount();
+		}
+		if (this.mViewPagerCompat != null) {
+			this.setCurrentItem(this.mViewPagerCompat.getCurrentItem());
+		}
+		ViewCompat.postInvalidateOnAnimation(this);
+	}
+
+	private final class IndicatorOnAdapterChangeListener implements ViewPagerCompat.OnAdapterChangeListener {
+
+		/**
+		 * Called when the adapter for the given view pager has changed.
+		 *
+		 * @param container  ViewPagerCompat where the adapter change has happened
+		 * @param oldAdapter the previously set adapter
+		 * @param newAdapter the newly set adapter
+		 */
+		@Override
+		public void onAdapterChanged(@NonNull ViewPagerCompat container, @Nullable ViewPagerCompat.Adapter oldAdapter, @Nullable ViewPagerCompat.Adapter newAdapter) {
+			IndicatorView.this.setPagerAdapter(newAdapter);
 		}
 	}
 
-	final class OnPageChangeListener extends ViewPagerCompat.OnSimplePageChangeListener {
+	private final class IndicatorOnPageChangeListener implements ViewPagerCompat.OnPageChangeListener {
 
+		/**
+		 * This method will be invoked when the current page is scrolled, either as part
+		 * of a programmatically initiated smooth scroll or a user initiated touch scroll.
+		 *
+		 * @param position             Position index of the first page currently being displayed.
+		 *                             Page position+1 will be visible if positionOffset is nonzero.
+		 * @param positionOffset       Value from [0, 1) indicating the offset from the page at position.
+		 * @param positionOffsetPixels Value in pixels indicating the offset from position.
+		 */
 		@Override
 		public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-			performIndicatorChanged(position);
+			IndicatorView.this.setScrollPosition(position, positionOffset, positionOffsetPixels);
 		}
 
+		/**
+		 * This method will be invoked when a new page becomes selected. Animation is not
+		 * necessarily complete.
+		 *
+		 * @param position Position index of the new selected page.
+		 */
 		@Override
 		public void onPageSelected(int position) {
-			performIndicatorChanged(position);
+			IndicatorView.this.setCurrentItem(position);
+		}
+
+		/**
+		 * Called when the scroll state changes. Useful for discovering when the user
+		 * begins dragging, when the pager is automatically settling to the current page,
+		 * or when it is fully stopped/idle.
+		 *
+		 * @param state The new scroll state.
+		 * @see ViewPagerCompat#SCROLL_STATE_IDLE
+		 * @see ViewPagerCompat#SCROLL_STATE_DRAGGING
+		 * @see ViewPagerCompat#SCROLL_STATE_SETTLING
+		 */
+		@Override
+		public void onPageScrollStateChanged(int state) {
+
 		}
 	}
 
-	final class AdapterDataSetObserver extends DataSetObserver {
+	private final class IndicatorDataSetObserver extends DataSetObserver {
 
+		/**
+		 * This method is called when the entire data set has changed,
+		 * most likely through a call to {@link Cursor#requery()} on a {@link Cursor}.
+		 */
 		@Override
 		public void onChanged() {
-			indicatorDataSetChanged();
+			IndicatorView.this.populateFromAdapter();
 		}
 
+		/**
+		 * This method is called when the entire data becomes invalid,
+		 * most likely through a call to {@link Cursor#deactivate()} or {@link Cursor#close()} on a
+		 * {@link Cursor}.
+		 */
 		@Override
 		public void onInvalidated() {
-			indicatorDataSetChanged();
-		}
-	}
-
-	final class IndicatorDataSetObserver extends DataSetObserver {
-
-		@Override
-		public void onChanged() {
-			indicatorDataSetChanged();
-		}
-
-		@Override
-		public void onInvalidated() {
-			indicatorDataSetChanged();
-		}
-	}
-
-	public static abstract class Adapter {
-		private final DataSetObservable mObservable = new DataSetObservable();
-		private DataSetObserver mViewPagerObserver;
-
-		public final void registerDataSetObserver(@NonNull DataSetObserver observer) {
-			this.mObservable.registerObserver(observer);
-		}
-
-		public final void unregisterDataSetObserver(@NonNull DataSetObserver observer) {
-			this.mObservable.unregisterObserver(observer);
-		}
-
-		public final void notifyDataSetChanged() {
-			synchronized (this) {
-				if (this.mViewPagerObserver != null) {
-					this.mViewPagerObserver.onChanged();
-				}
-			}
-			this.mObservable.notifyChanged();
-		}
-
-		@NonNull
-		public abstract View onCreateItemView(@NonNull LayoutInflater inflater, @NonNull ViewGroup container, int position);
-
-		public abstract void onBindItemView(@NonNull ViewGroup container, @NonNull View view, boolean hasSelected, int position);
-
-		final void setViewPagerObserver(@Nullable DataSetObserver observer) {
-			synchronized (this) {
-				this.mViewPagerObserver = observer;
-			}
-		}
-	}
-
-	public static class SimpleAdapter extends Adapter {
-
-		private int mIndicatorWidth;
-		private int mIndicatorHeight;
-		@DrawableRes
-		private int mIndicatorResId = -1;
-		@DrawableRes
-		private int mIndicatorSelectedResId = R.drawable.sha_sol_cir_gray;
-		@DrawableRes
-		private int mIndicatorUnSelectedResId = R.drawable.sha_sol_cir_white;
-
-		private ImageView.ScaleType mScaleType = ImageView.ScaleType.CENTER_CROP;
-
-		final ImageView.ScaleType[] mScaleTypes = new ImageView.ScaleType[]{
-				ImageView.ScaleType.CENTER,
-				ImageView.ScaleType.CENTER_CROP,
-				ImageView.ScaleType.CENTER_INSIDE,
-				ImageView.ScaleType.FIT_CENTER,
-				ImageView.ScaleType.FIT_START,
-				ImageView.ScaleType.FIT_END,
-				ImageView.ScaleType.FIT_XY,
-				ImageView.ScaleType.MATRIX
-		};
-
-		public SimpleAdapter(@NonNull Context context) {
-			this(context, null);
-		}
-
-		public SimpleAdapter(@NonNull Context context, @Nullable AttributeSet attrs) {
-			final DisplayMetrics display = context.getResources().getDisplayMetrics();
-			this.mIndicatorWidth = display.widthPixels / 80;
-			this.mIndicatorHeight = display.widthPixels / 80;
-
-			if (attrs != null) {
-				final TypedArray mTypedArray = context.obtainStyledAttributes(attrs, R.styleable.IndicatorView);
-				this.mIndicatorWidth = mTypedArray.getDimensionPixelOffset(R.styleable.IndicatorView_defIndicatorWidth, this.mIndicatorWidth);
-				this.mIndicatorHeight = mTypedArray.getDimensionPixelOffset(R.styleable.IndicatorView_defIndicatorHeight, this.mIndicatorHeight);
-				this.mIndicatorResId = mTypedArray.getResourceId(R.styleable.IndicatorView_defIndicatorDrawable, this.mIndicatorResId);
-				this.mIndicatorSelectedResId = mTypedArray.getResourceId(R.styleable.IndicatorView_defIndicatorSelectedDrawable, this.mIndicatorSelectedResId);
-				this.mIndicatorUnSelectedResId = mTypedArray.getResourceId(R.styleable.IndicatorView_defIndicatorUnSelectedDrawable, this.mIndicatorUnSelectedResId);
-				final int index = mTypedArray.getInt(R.styleable.IndicatorView_defIndicatorScaleType, 1);
-				this.mScaleType = this.mScaleTypes[index];
-				mTypedArray.recycle();
-			}
-		}
-
-		@NonNull
-		@Override
-		public View onCreateItemView(@NonNull LayoutInflater inflater, @NonNull ViewGroup container, int position) {
-			final RelativeLayout.LayoutParams preLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-			preLayoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
-			preLayoutParams.width = this.mIndicatorWidth;
-			preLayoutParams.height = this.mIndicatorHeight;
-			final AppCompatImageView mImageView = new AppCompatImageView(inflater.getContext());
-			mImageView.setLayoutParams(preLayoutParams);
-			mImageView.setScaleType(this.mScaleType);
-			mImageView.setId(android.R.id.icon);
-
-			final RelativeLayout preRelativeLayout = new RelativeLayout(inflater.getContext());
-			preRelativeLayout.addView(mImageView);
-			return preRelativeLayout;
-		}
-
-		@Override
-		public void onBindItemView(@NonNull ViewGroup container, @NonNull View view, boolean hasSelected, int position) {
-			final AppCompatImageView mImageView = view.findViewById(android.R.id.icon);
-			mImageView.setSelected(hasSelected);
-
-			if (this.mIndicatorResId == -1) {
-				if (hasSelected) {
-					mImageView.setImageResource(this.mIndicatorSelectedResId);
-				} else {
-					mImageView.setImageResource(this.mIndicatorUnSelectedResId);
-				}
-			} else {
-				mImageView.setImageResource(this.mIndicatorResId);
-			}
-		}
-
-		public SimpleAdapter setIndicatorWidth(int indicatorWidth) {
-			this.mIndicatorWidth = indicatorWidth;
-			return this;
-		}
-
-		public SimpleAdapter setIndicatorHeight(int indicatorHeight) {
-			this.mIndicatorHeight = indicatorHeight;
-			return this;
-		}
-
-		public SimpleAdapter setIndicatorResId(@DrawableRes int resId) {
-			this.mIndicatorResId = resId;
-			return this;
-		}
-
-		public SimpleAdapter setIndicatorSelectedResId(@DrawableRes int selectedResId) {
-			this.mIndicatorSelectedResId = selectedResId;
-			return this;
-		}
-
-		public SimpleAdapter setIndicatorUnSelectedResId(@DrawableRes int unSelectedResId) {
-			this.mIndicatorUnSelectedResId = unSelectedResId;
-			return this;
-		}
-
-		public SimpleAdapter setScaleType(ImageView.ScaleType scaleType) {
-			this.mScaleType = scaleType;
-			return this;
+			IndicatorView.this.populateFromAdapter();
 		}
 	}
 }

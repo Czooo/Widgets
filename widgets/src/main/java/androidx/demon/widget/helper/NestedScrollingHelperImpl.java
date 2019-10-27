@@ -1,8 +1,6 @@
 package androidx.demon.widget.helper;
 
-import android.annotation.TargetApi;
 import android.content.Context;
-import android.os.Build;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -341,6 +339,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 		}
 		Arrays.fill(consumed, 0);
 		Arrays.fill(unconsumed, 0);
+
 		if (deltaX != 0 || deltaY != 0) {
 			final int dxConsumed = this.getScrollOffsetX();
 			final int dyConsumed = this.getScrollOffsetY();
@@ -370,6 +369,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 			}
 			if (unconsumedX != 0 || unconsumedY != 0) {
 				this.mCallback.onScrollBy(this, unconsumedX, unconsumedY, consumed);
+
 				this.mScrollOffsetCount[0] += consumed[0];
 				this.mScrollOffsetCount[1] += consumed[1];
 				if (consumed[0] != 0 || consumed[1] != 0) {
@@ -604,7 +604,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 		@Override
 		public void run() {
 			NestedScrollingHelperImpl.this.mIsScrollStarted = true;
-
 			if (this.mOverScroller.computeScrollOffset()) {
 				final int currX = this.mOverScroller.getCurrX();
 				final int currY = this.mOverScroller.getCurrY();
@@ -850,7 +849,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 * @return true if this ViewParent accepts the nested scroll operation
 	 */
 	@Override
-	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	public boolean onStartNestedScroll(@NonNull View child, @NonNull View target, int nestedScrollAxes) {
 		return this.mAnchorView.isEnabled()
 				&& this.mAnchorView.isShown()
@@ -1020,6 +1018,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				}
 			}
 		}
+
 		final int[] parentConsumed = this.mParentScrollConsumed;
 		if (this.dispatchNestedPreScroll(dx - consumed[0], dy - consumed[1], parentConsumed, null)) {
 			consumed[0] += parentConsumed[0];

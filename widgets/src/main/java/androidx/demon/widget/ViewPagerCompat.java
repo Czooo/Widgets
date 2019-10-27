@@ -239,7 +239,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 		});
 	}
 
-	private boolean mInLayout;
+	private boolean mInLayout = false;
 	private boolean mFirstLayout = true;
 	private boolean mCalledSuper;
 	private boolean mPopulatePending;
@@ -260,15 +260,19 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	private int mOrientation = HORIZONTAL;
 	private boolean mIsScrollingLoop = false;
 	private boolean mIsAllowUserScrollable = true;
+	private boolean mIsDetachedFromWindow = false;
 
 	@Override
 	protected void onAttachedToWindow() {
 		super.onAttachedToWindow();
-		this.mFirstLayout = true;
+		if (!this.mIsDetachedFromWindow) {
+			this.mFirstLayout = true;
+		}
 	}
 
 	@Override
 	protected void onDetachedFromWindow() {
+		this.mIsDetachedFromWindow = !this.mFirstLayout;
 		// To be on the safe side, abort the scroller
 		if ((this.mScroller != null) && !this.mScroller.isFinished()) {
 			this.setCurrentItemInternal(this.getCurrentItem(), false, true);
@@ -1684,6 +1688,12 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 	public void removeOnAdapterChangeListener(@NonNull OnAdapterChangeListener listener) {
 		if (this.mOnAdapterChangeListeners != null) {
 			this.mOnAdapterChangeListeners.remove(listener);
+		}
+	}
+
+	public void clearOnAdapterChangeListeners() {
+		if (this.mOnAdapterChangeListeners != null) {
+			this.mOnAdapterChangeListeners.clear();
 		}
 	}
 

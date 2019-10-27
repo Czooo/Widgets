@@ -2,8 +2,11 @@ package androidx.demon.widget;
 
 import android.graphics.Color;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.RelativeLayout;
+
+import java.util.Arrays;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,6 +21,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 
 	private RefreshMode mRefreshMode = RefreshMode.REFRESH_MODE_NONE;
 
+	private View mDragView;
 	private boolean mIsNotifying;
 	private boolean mIsRefreshing;
 	private boolean mIsFinishRollbackInProgress;
@@ -26,8 +30,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 
 	private RefreshLayout.OnRefreshListener mOnRefreshListener;
 	private RefreshLayout.OnDragViewOwner mOnDragViewOwner;
-
-	private View mDragView;
+	private int[] mRollbackConsumed = new int[2];
 
 	@Override
 	public boolean shouldStartNestedScroll() {
@@ -104,6 +107,15 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		} else {
 			this.dispatchOnRefreshPull(direction, preScrollOffsetY);
 		}
+		if (!locatRefreshed
+				&& this.mIsFinishRollbackInProgress
+				&& helper.isNestedScrollInProgress()
+				&& helper.getScrollState() == NestedScrollingHelper.SCROLL_STATE_SETTLING) {
+			this.mRollbackConsumed[0] += consumed[0];
+			this.mRollbackConsumed[1] += consumed[1];
+		} else {
+			Arrays.fill(this.mRollbackConsumed, 0);
+		}
 	}
 
 	@Override
@@ -141,6 +153,19 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 				}
 			}
 		}
+	}
+
+	public void dispatchTouchEvent(MotionEvent event) {
+		if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+			Arrays.fill(this.mRollbackConsumed, 0);
+		}
+	}
+
+	public void onNestedPreScroll(@NonNull View target, int dx, int dy, @NonNull int[] consumed) {
+		// notify child view on rollback consumed
+		consumed[0] -= this.mRollbackConsumed[0] * this.getFrictionRatio();
+		consumed[1] -= this.mRollbackConsumed[1] * this.getFrictionRatio();
+		Arrays.fill(this.mRollbackConsumed, 0);
 	}
 
 	public void setRefreshMode(@NonNull RefreshMode mode) {

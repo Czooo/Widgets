@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -58,9 +59,21 @@ public class RefreshLayout extends DragRelativeLayout {
 	}
 
 	@Override
-	public void setDragManager(@Nullable DragManager manager) {
-		if (manager instanceof RefreshDragManager) {
-			super.setDragManager(manager);
+	public boolean dispatchTouchEvent(MotionEvent event) {
+		this.getDragManager().dispatchTouchEvent(event);
+		return super.dispatchTouchEvent(event);
+	}
+
+	@Override
+	public void onNestedPreScroll(@NonNull View target, int dx, int dy, @NonNull int[] consumed) {
+		super.onNestedPreScroll(target, dx, dy, consumed);
+		this.getDragManager().onNestedPreScroll(target, dx, dy, consumed);
+	}
+
+	@Override
+	public void setDragManager(@Nullable DragManager dragManager) {
+		if (dragManager instanceof RefreshDragManager) {
+			super.setDragManager(dragManager);
 		}
 	}
 

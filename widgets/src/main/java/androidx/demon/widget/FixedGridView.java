@@ -35,6 +35,7 @@ public class FixedGridView extends RecyclerView {
 	public void setLayoutManager(@Nullable LayoutManager layoutManager) {
 		if (layoutManager instanceof FixedGridLayoutManager) {
 			super.setLayoutManager(layoutManager);
+			return;
 		}
 		throw new IllegalStateException("layoutManager " + layoutManager + " different types");
 	}

@@ -557,12 +557,6 @@ public class FixedGridLayoutManager extends RecyclerView.LayoutManager {
 
 		@Override
 		public int getSpanSize(int position) {
-			if (position == 0) {
-				return 3;
-			}
-			if (position == 1) {
-				return 2;
-			}
 			return 1;
 		}
 	}

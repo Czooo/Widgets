@@ -52,7 +52,6 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 	@OrientationMode
 	private int mOrientation = VERTICAL;
 	private float mFrictionRatio = FRICTION_RATIO;
-	private boolean mIsShouldStartNestedScroll = false;
 	private boolean mIsDraggingToStart = true;
 	private boolean mIsDraggingToEnd = true;
 
@@ -70,7 +69,6 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 
 	public DragRelativeLayout(Context context, AttributeSet attrs, int defStyleAttr) {
 		super(context, attrs, defStyleAttr);
-
 		this.setFocusable(true);
 		this.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
 		this.setWillNotDraw(false);
@@ -78,12 +76,10 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 		final TypedArray mTypedArray = context.obtainStyledAttributes(attrs, R.styleable.DragRelativeLayout);
 		final int mOrientation = mTypedArray.getInt(R.styleable.DragRelativeLayout_android_orientation, this.mOrientation);
 		final float mFrictionRatio = mTypedArray.getFloat(R.styleable.DragRelativeLayout_frictionRatio, this.mFrictionRatio);
-		final boolean mIsShouldStartNestedScroll = mTypedArray.getBoolean(R.styleable.DragRelativeLayout_shouldStartNestedScroll, this.mIsShouldStartNestedScroll);
 		mTypedArray.recycle();
 
 		this.setOrientation(mOrientation);
 		this.setFrictionRatio(mFrictionRatio);
-		this.setShouldStartNestedScroll(mIsShouldStartNestedScroll);
 		this.mNestedScrollingHelper = new NestedScrollingHelperImpl(this, this);
 	}
 
@@ -143,6 +139,8 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 		return super.onTouchEvent(event);
 	}
 
+	// NestedScrollingParent
+
 	@Override
 	public boolean onStartNestedScroll(@NonNull View child, @NonNull View target, int nestedScrollAxes) {
 		return this.mNestedScrollingHelper.onStartNestedScroll(child, target, nestedScrollAxes);
@@ -169,11 +167,21 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 	}
 
 	@Override
+	public boolean onNestedPreFling(@NonNull View target, float velocityX, float velocityY) {
+		return this.mNestedScrollingHelper.onNestedPreFling(target, velocityX, velocityY);
+	}
+
+	@Override
+	public boolean onNestedFling(@NonNull View target, float velocityX, float velocityY, boolean consumed) {
+		return this.mNestedScrollingHelper.onNestedFling(target, velocityX, velocityY, consumed);
+	}
+
+	@Override
 	public void onStopNestedScroll(@NonNull View target) {
 		this.mNestedScrollingHelper.onStopNestedScroll(target);
 	}
 
-	// NestedScrollingChild
+	// NestedScrollingChild2
 
 	@Override
 	public void setNestedScrollingEnabled(boolean enabled) {
@@ -211,16 +219,6 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 	}
 
 	@Override
-	public boolean onNestedPreFling(@NonNull View target, float velocityX, float velocityY) {
-		return this.dispatchNestedPreFling(velocityX, velocityY);
-	}
-
-	@Override
-	public boolean onNestedFling(@NonNull View target, float velocityX, float velocityY, boolean consumed) {
-		return this.dispatchNestedFling(velocityX, velocityY, consumed);
-	}
-
-	@Override
 	public boolean dispatchNestedFling(float velocityX, float velocityY, boolean consumed) {
 		return this.mNestedScrollingHelper.dispatchNestedFling(velocityX, velocityY, consumed);
 	}
@@ -253,8 +251,7 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 		if (this.mDragManager == null) {
 			return false;
 		}
-		return this.mIsShouldStartNestedScroll
-				&& this.mDragManager.shouldStartNestedScroll();
+		return this.mDragManager.shouldStartNestedScroll();
 	}
 
 	@CallSuper
@@ -295,10 +292,6 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 				listener.onScrollStateChanged(this, scrollState);
 			}
 		}
-	}
-
-	public void setShouldStartNestedScroll(boolean shouldStartNestedScroll) {
-		this.mIsShouldStartNestedScroll = shouldStartNestedScroll;
 	}
 
 	public void setDraggingToStart(boolean start) {

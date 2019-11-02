@@ -1146,18 +1146,12 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 					this.completeScroll(false);
 					this.mIsBeingDragged = false;
 				}
-				if (VERTICAL == this.mOrientation) {
-					this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
-				} else {
-					this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
-				}
 				break;
 			case MotionEvent.ACTION_MOVE:
 				final int mPointerIndex = event.findPointerIndex(this.mActivePointerId);
 				if (mPointerIndex == INVALID_POINTER) {
 					break;
 				}
-
 				final float x = event.getX(mPointerIndex);
 				final float y = event.getY(mPointerIndex);
 				final float dx = x - this.mTouchMotionX;
@@ -1176,6 +1170,7 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 					return false;
 				}
 
+				final boolean mIsBeingDragged = this.mIsBeingDragged;
 				if (VERTICAL == this.mOrientation
 						&& yDiff > this.mTouchSlop && yDiff * 0.5f > xDiff) {
 					this.mIsBeingDragged = true;
@@ -1189,6 +1184,13 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				} else if ((VERTICAL == this.mOrientation && xDiff > this.mTouchSlop)
 						|| (HORIZONTAL == this.mOrientation && yDiff > this.mTouchSlop)) {
 					this.mIsUnableToDrag = true;
+				}
+				if (!mIsBeingDragged && this.mIsBeingDragged) {
+					if (VERTICAL == this.mOrientation) {
+						this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
+					} else {
+						this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
+					}
 				}
 				if (this.mIsBeingDragged) {
 					this.requestParentDisallowInterceptTouchEvent(true);
@@ -1236,11 +1238,6 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 				this.mTouchMotionX = this.mInitialMotionX = event.getX();
 				this.mTouchMotionY = this.mInitialMotionY = event.getY();
 				this.mActivePointerId = event.getPointerId(0);
-				if (VERTICAL == this.mOrientation) {
-					this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
-				} else {
-					this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
-				}
 				break;
 			case MotionEvent.ACTION_MOVE:
 				if (!this.mIsBeingDragged) {
@@ -1269,6 +1266,11 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 						this.mTouchMotionY = y;
 					}
 					if (this.mIsBeingDragged) {
+						if (VERTICAL == this.mOrientation) {
+							this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
+						} else {
+							this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
+						}
 						this.requestParentDisallowInterceptTouchEvent(true);
 						this.setScrollState(SCROLL_STATE_DRAGGING);
 						this.setScrollingCacheEnabled(true);
@@ -1407,11 +1409,16 @@ public class ViewPagerCompat extends ViewGroup implements NestedScrollingChild {
 			this.pageScrolled((int) nowScroll, oldScrollY);
 		}
 
-		// Nested Scrolling Pre Pass
+		if (VERTICAL == this.mOrientation) {
+			deltaY /= this.mScrollDeltaRatio;
+		} else {
+			deltaX /= this.mScrollDeltaRatio;
+		}
 		final int scrolledDeltaX = (this.getScrollX() - oldScrollX);
 		final int scrolledDeltaY = (this.getScrollY() - oldScrollY);
 		deltaX -= scrolledDeltaX;
 		deltaY -= scrolledDeltaY;
+		// Nested Scrolling Pre Pass
 		if (this.dispatchNestedScroll(scrolledDeltaX, scrolledDeltaY, (int) deltaX, (int) deltaY, this.mScrollConsumed)) {
 			deltaX -= this.mScrollConsumed[0];
 			deltaY -= this.mScrollConsumed[1];

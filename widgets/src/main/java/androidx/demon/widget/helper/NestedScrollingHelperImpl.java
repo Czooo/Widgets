@@ -126,14 +126,11 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 					this.mViewScroller.stopScrollInternal();
 					this.setScrollState(SCROLL_STATE_DRAGGING);
 				}
-				int nestedScrollAxis = ViewCompat.SCROLL_AXIS_NONE;
 				if (this.mCallback.canScrollHorizontally()) {
-					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_HORIZONTAL;
+					this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
+				} else if (this.mCallback.canScrollVertically()) {
+					this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
 				}
-				if (this.mCallback.canScrollVertically()) {
-					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_VERTICAL;
-				}
-				this.startNestedScroll(nestedScrollAxis);
 				break;
 			case MotionEvent.ACTION_MOVE:
 				mPointerIndex = event.findPointerIndex(this.mActivePointerId);
@@ -221,14 +218,11 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				this.mLastTouchMotionX = this.mInitialMotionX = event.getX(mPointerIndex);
 				this.mLastTouchMotionY = this.mInitialMotionY = event.getY(mPointerIndex);
 
-				int nestedScrollAxis = ViewCompat.SCROLL_AXIS_NONE;
 				if (this.mCallback.canScrollHorizontally()) {
-					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_HORIZONTAL;
+					this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
+				} else if (this.mCallback.canScrollVertically()) {
+					this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
 				}
-				if (this.mCallback.canScrollVertically()) {
-					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_VERTICAL;
-				}
-				this.startNestedScroll(nestedScrollAxis);
 				break;
 			case MotionEvent.ACTION_MOVE:
 				mPointerIndex = event.findPointerIndex(this.mActivePointerId);
@@ -859,7 +853,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	@Override
 	public boolean onStartNestedScroll(@NonNull View child, @NonNull View target, int nestedScrollAxes) {
 		return this.mAnchorView.isEnabled()
-				&& this.mAnchorView.isShown()
 				&& (((nestedScrollAxes & ViewCompat.SCROLL_AXIS_VERTICAL) != 0 && this.mCallback.canScrollVertically())
 				|| ((nestedScrollAxes & ViewCompat.SCROLL_AXIS_HORIZONTAL) != 0 && this.mCallback.canScrollHorizontally()));
 	}

@@ -38,6 +38,7 @@
         <activity android:name=".FlowLabelViewActivity"/>
         <activity android:name=".CalendarViewActivity"/>
         <activity android:name=".FixedGridViewActivity"/>
+        <activity android:name=".CoordinatorLayoutActivity"/>
     </application>
 
 </manifest>

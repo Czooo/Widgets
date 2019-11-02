@@ -198,7 +198,8 @@ public class MainActivity extends AppCompatActivity {
 				.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
-						startActivity(new Intent(MainActivity.this, CalendarViewActivity.class));
+						startActivity(new Intent(MainActivity.this, CoordinatorLayoutActivity.class));
+//						startActivity(new Intent(MainActivity.this, CalendarViewActivity.class));
 					}
 				});
 		this.findViewById(R.id.joinFixedGridView)

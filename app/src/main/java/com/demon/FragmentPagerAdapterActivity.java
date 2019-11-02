@@ -45,6 +45,7 @@ public class FragmentPagerAdapterActivity extends AppCompatActivity {
 		};
 		final ViewPagerCompat mViewPagerCompat = findViewById(R.id.viewPagerCompat);
 		mViewPagerCompat.setAdapter(mFragmentPagerAdapterCompat);
+		mViewPagerCompat.setNestedScrollingEnabled(true);
 		mViewPagerCompat.setScrollingLoop(true);
 	}
 }

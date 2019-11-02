@@ -32,6 +32,9 @@ public class RefreshLayout extends DragRelativeLayout {
 
 	public RefreshLayout(Context context, AttributeSet attrs, int defStyleAttr) {
 		super(context, attrs, defStyleAttr);
+		this.setFocusable(true);
+		this.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
+		this.setWillNotDraw(false);
 
 		final TypedArray mTypedArray = context.obtainStyledAttributes(attrs, R.styleable.RefreshLayout);
 		final int mRefreshMode = mTypedArray.getInt(R.styleable.RefreshLayout_refreshMode, RefreshMode.REFRESH_MODE_NONE.getKey());

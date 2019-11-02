@@ -129,6 +129,7 @@ public class ViewPagerCompatActivity extends AppCompatActivity {
 		final ViewPagerCompat mViewPagerCompat = findViewById(R.id.viewPagerCompat);
 		mViewPagerCompat.setPageTransformer(true, new DepthPageTransformer());
 		mViewPagerCompat.setAdapter(mPagerAdapterCompat);
+		mViewPagerCompat.setNestedScrollingEnabled(true);
 		mViewPagerCompat.setOffscreenPageLimit(2);
 //		ColorDrawable drawable = new ColorDrawable(Color.RED);
 //		mViewPagerCompat.setPageMarginDrawable(drawable);

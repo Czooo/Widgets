@@ -852,9 +852,8 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 */
 	@Override
 	public boolean onStartNestedScroll(@NonNull View child, @NonNull View target, int nestedScrollAxes) {
-		return this.mAnchorView.isEnabled()
-				&& (((nestedScrollAxes & ViewCompat.SCROLL_AXIS_VERTICAL) != 0 && this.mCallback.canScrollVertically())
-				|| ((nestedScrollAxes & ViewCompat.SCROLL_AXIS_HORIZONTAL) != 0 && this.mCallback.canScrollHorizontally()));
+		return ((nestedScrollAxes & ViewCompat.SCROLL_AXIS_VERTICAL) != 0 && this.mCallback.canScrollVertically())
+				|| ((nestedScrollAxes & ViewCompat.SCROLL_AXIS_HORIZONTAL) != 0 && this.mCallback.canScrollHorizontally());
 	}
 
 	/**
@@ -928,8 +927,17 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 */
 	@Override
 	public void onNestedScroll(@NonNull View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
+		if (!this.hasNestedScrollingParent()) {
+			if (this.mCallback.canScrollHorizontally()) {
+				this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
+			} else if (this.mCallback.canScrollVertically()) {
+				this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
+			}
+		}
 		this.dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, this.mParentOffsetInWindow);
-
+		if (DEBUG) {
+			Log.e(TAG, "onNestedScroll " + dyConsumed + " , " + dyUnconsumed + " , " + this.mParentOffsetInWindow[1]);
+		}
 		if (this.dispatchOnStartNestedScroll()) {
 			final int dx = dxUnconsumed + this.mParentOffsetInWindow[0];
 			final int dy = dyUnconsumed + this.mParentOffsetInWindow[1];
@@ -1019,11 +1027,26 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				}
 			}
 		}
-
+		if (DEBUG) {
+			Log.e(TAG, "onNestedPreScroll Before" + (dy - consumed[1] + " , " + this.mParentScrollConsumed[1]) + " , " + this.mNestedScrollInProgress);
+		}
+		if (!this.hasNestedScrollingParent()) {
+			if (this.mCallback.canScrollHorizontally()) {
+				this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
+			} else if (this.mCallback.canScrollVertically()) {
+				this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
+			}
+		}
 		final int[] parentConsumed = this.mParentScrollConsumed;
 		if (this.dispatchNestedPreScroll(dx - consumed[0], dy - consumed[1], parentConsumed, null)) {
 			consumed[0] += parentConsumed[0];
 			consumed[1] += parentConsumed[1];
+			if (DEBUG) {
+				Log.e(TAG, "onNestedPreScrolling " + parentConsumed[1]);
+			}
+		}
+		if (DEBUG) {
+			Log.e(TAG, "onNestedPreScroll After " + (dy - consumed[1] + " , " + this.mParentScrollConsumed[1]));
 		}
 	}
 

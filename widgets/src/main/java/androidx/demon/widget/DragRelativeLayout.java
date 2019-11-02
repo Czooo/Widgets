@@ -69,9 +69,9 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 
 	public DragRelativeLayout(Context context, AttributeSet attrs, int defStyleAttr) {
 		super(context, attrs, defStyleAttr);
-		this.setFocusable(true);
-		this.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
-		this.setWillNotDraw(false);
+//		this.setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
+//		this.setWillNotDraw(false);
+//		this.setFocusable(true);
 
 		final TypedArray mTypedArray = context.obtainStyledAttributes(attrs, R.styleable.DragRelativeLayout);
 		final int mOrientation = mTypedArray.getInt(R.styleable.DragRelativeLayout_android_orientation, this.mOrientation);

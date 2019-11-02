@@ -1,9 +1,11 @@
 package com.demon;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +16,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.demon.widget.TripFooterLoadView;
+import com.google.android.material.appbar.AppBarLayout;
 
 import java.util.ArrayList;
 
@@ -21,7 +24,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatImageView;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.view.ViewCompat;
 import androidx.demon.widget.BannerLayout;
+import androidx.demon.widget.DragRelativeLayout;
 import androidx.demon.widget.NineGridView;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
@@ -125,6 +131,8 @@ public class CoordinatorLayoutActivity extends AppCompatActivity {
 						}
 					});
 
+					mBannerLayout.getViewPagerCompat()
+							.setNestedScrollingEnabled(false);
 					// 自动管理生命周期
 					mBannerLayout.setLifecycleOwner(CoordinatorLayoutActivity.this);
 					// 滚动方向
@@ -307,6 +315,72 @@ public class CoordinatorLayoutActivity extends AppCompatActivity {
 			}
 			itemViewSize[0] = 600;
 			itemViewSize[1] = 400;
+		}
+	}
+
+	public static class  aaa extends AppBarLayout.ScrollingViewBehavior implements AppBarLayout.OnOffsetChangedListener {
+
+		public aaa() {
+			super();
+		}
+
+		public aaa(Context context, AttributeSet attrs) {
+			super(context, attrs);
+		}
+
+		private AppBarLayout mAppBarLayout;
+		@Override
+		public boolean layoutDependsOn(CoordinatorLayout parent, View child, View dependency) {
+			if(dependency instanceof AppBarLayout) {
+				mAppBarLayout = (AppBarLayout) dependency;
+				mAppBarLayout.addOnOffsetChangedListener(this);
+			}
+			if(child instanceof RefreshLayout) {
+				((RefreshLayout) child).setOnChildScrollCallback(new DragRelativeLayout.OnChildScrollCallback() {
+					@Override
+					public boolean canChildScroll(@NonNull ViewGroup container, int direction) {
+						final RefreshLayout refreshLayout = (RefreshLayout) container;
+						final View dragView = refreshLayout.getDragManager().getDragView();
+						if (dragView != null) {
+							if (RefreshLayout.HORIZONTAL == refreshLayout.getOrientation()) {
+								return dragView.canScrollHorizontally(direction);
+							} else if (RefreshLayout.VERTICAL == refreshLayout.getOrientation()) {
+								final boolean canScrollVertically = dragView.canScrollVertically(direction);
+								if (direction < 0) {
+									return canScrollVertically || offset < 0;
+								}
+								return canScrollVertically;
+							}
+						}
+						return true;
+					}
+				});
+			}
+			return super.layoutDependsOn(parent, child, dependency);
+		}
+
+		@Override
+		public boolean onDependentViewChanged(CoordinatorLayout parent, View child, View dependency) {
+			Log.e("Cooo", "onDependentViewChanged " + dependency.getY());
+			return super.onDependentViewChanged(parent, child, dependency);
+		}
+
+		@Override
+		public boolean onStartNestedScroll(@NonNull CoordinatorLayout coordinatorLayout, @NonNull View child, @NonNull View directTargetChild, @NonNull View target, int axes, int type) {
+//			return super.onStartNestedScroll(coordinatorLayout, child, directTargetChild, target, axes, type);
+			return (axes & ViewCompat.SCROLL_AXIS_VERTICAL) != 0;
+		}
+
+		@Override
+		public void onNestedPreScroll(@NonNull CoordinatorLayout coordinatorLayout, @NonNull View child, @NonNull View target, int dx, int dy, @NonNull int[] consumed, int type) {
+			super.onNestedPreScroll(coordinatorLayout, child, target, dx, dy, consumed, type);
+			Log.e("Coo", dy + " === ");
+		}
+
+		int offset = 0;
+		@Override
+		public void onOffsetChanged(AppBarLayout appBarLayout, int offset) {
+			this.offset = offset;
 		}
 	}
 }

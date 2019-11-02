@@ -126,6 +126,14 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 					this.mViewScroller.stopScrollInternal();
 					this.setScrollState(SCROLL_STATE_DRAGGING);
 				}
+				int nestedScrollAxis = ViewCompat.SCROLL_AXIS_NONE;
+				if (this.mCallback.canScrollHorizontally()) {
+					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_HORIZONTAL;
+				}
+				if (this.mCallback.canScrollVertically()) {
+					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_VERTICAL;
+				}
+				this.startNestedScroll(nestedScrollAxis);
 				break;
 			case MotionEvent.ACTION_MOVE:
 				mPointerIndex = event.findPointerIndex(this.mActivePointerId);
@@ -220,7 +228,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				if (this.mCallback.canScrollVertically()) {
 					nestedScrollAxis |= ViewCompat.SCROLL_AXIS_VERTICAL;
 				}
-//				this.startNestedScroll(nestedScrollAxis);
+				this.startNestedScroll(nestedScrollAxis);
 				break;
 			case MotionEvent.ACTION_MOVE:
 				mPointerIndex = event.findPointerIndex(this.mActivePointerId);
@@ -256,10 +264,10 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				if (!this.mIsBeingDragged) {
 					return false;
 				}
-//				if (this.dispatchNestedPreScroll(dx, dy, this.mScrollConsumed, this.mScrollOffset)) {
-//					dx -= this.mScrollConsumed[0];
-//					dy -= this.mScrollConsumed[1];
-//				}
+				if (this.dispatchNestedPreScroll(dx, dy, this.mScrollConsumed, this.mScrollOffset)) {
+					dx -= this.mScrollConsumed[0];
+					dy -= this.mScrollConsumed[1];
+				}
 				// Not else! Note that mIsBeingDragged can be set above.
 				if (SCROLL_STATE_DRAGGING == this.mScrollState) {
 					this.mLastTouchMotionX = x - this.mScrollOffset[0];
@@ -267,10 +275,10 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 					// Scroll to follow the motion event
 					this.scrollByInternal(dx, dy, this.consumed, this.unconsumed);
 					// Update the last touch co-ords, taking any scroll offset into account
-//					if (this.dispatchNestedScroll(this.consumed[0], this.consumed[1], this.unconsumed[0], this.unconsumed[1], this.mScrollOffset)) {
-//						this.mLastTouchMotionX -= this.mScrollOffset[0];
-//						this.mLastTouchMotionY -= this.mScrollOffset[1];
-//					}
+					if (this.dispatchNestedScroll(this.consumed[0], this.consumed[1], this.unconsumed[0], this.unconsumed[1], this.mScrollOffset)) {
+						this.mLastTouchMotionX -= this.mScrollOffset[0];
+						this.mLastTouchMotionY -= this.mScrollOffset[1];
+					}
 				}
 				break;
 			case MotionEvent.ACTION_POINTER_DOWN:

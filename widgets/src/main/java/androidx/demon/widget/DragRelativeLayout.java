@@ -57,8 +57,8 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 	private boolean mIsDraggingToEnd = true;
 
 	private DragManager mDragManager;
-	private ArrayList<OnScrollListener> mOnScrollListeners;
 	private OnChildScrollCallback mOnChildScrollCallback;
+	private ArrayList<OnScrollListener> mOnScrollListeners;
 
 	public DragRelativeLayout(Context context) {
 		this(context, null);

@@ -69,6 +69,13 @@ public class MainActivity extends AppCompatActivity {
 		});
 		mRefreshLayout.setRefreshing(true);
 
+		this.findViewById(R.id.headerFloatingView).setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				mRefreshLayout.setRefreshing(true);
+			}
+		});
+
 		final ArrayList<String> data = new ArrayList<>();
 		data.add("https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=845870984,388666921&fm=26&gp=0.jpg");
 		data.add("http://img0.imgtn.bdimg.com/it/u=1732553485,3379133703&fm=26&gp=0.jpg");

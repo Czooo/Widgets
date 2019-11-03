@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
 import java.util.Arrays;
@@ -33,9 +34,15 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 	private int[] mRollbackConsumed = new int[2];
 
 	@Override
+	public void onAttachedToWindow(@NonNull ViewGroup container) {
+		super.onAttachedToWindow(container);
+		this.getNestedScrollingHelper().setNestedScrollingStep(
+				new RefreshLayout.SimpleNestedScrollingStep());
+	}
+
+	@Override
 	public boolean shouldStartNestedScroll() {
 		this.ensureDragView();
-
 		if (this.mDragView == null) {
 			// Drag view not confirmed, nested scroll prohibited.
 			return false;
@@ -56,6 +63,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 
 	@Override
 	public boolean canChildScroll(int direction) {
+		this.ensureDragView();
 		if (RefreshLayout.HORIZONTAL == this.getOrientation()) {
 			return this.mDragView.canScrollHorizontally(direction);
 		} else if (RefreshLayout.VERTICAL == this.getOrientation()) {
@@ -66,6 +74,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 
 	@Override
 	public void onScrollBy(@NonNull NestedScrollingHelper helper, int dx, int dy, @NonNull int[] consumed) {
+		// scrollState : SCROLL_STATE_DRAGGING / SCROLL_STATE_SETTLING
 		final int mScrollOffsetX = helper.getScrollOffsetX();
 		final int mScrollOffsetY = helper.getScrollOffsetY();
 		int unconsumedX = dx;
@@ -82,7 +91,7 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		if (!locatRefreshed && this.mIsFinishRollbackInDragging) {
 			locatRefreshed = this.mFinishRollbackDelayMillis > System.currentTimeMillis();
 		}
-		if (locatRefreshed) {
+		if (locatRefreshed && NestedScrollingHelper.SCROLL_STATE_DRAGGING == helper.getScrollState()) {
 			final int mPreScrollDistance = this.getPreScrollDistance2(direction);
 			final int mPreScrollOffsetX = mScrollOffsetX + dx;
 			final int mPreScrollOffsetY = mScrollOffsetY + dy;
@@ -205,8 +214,20 @@ public class RefreshDragManager extends RefreshLayout.DragManager {
 		return this.mRefreshMode;
 	}
 
+	public boolean isNotifying() {
+		return this.mIsNotifying;
+	}
+
 	public boolean isRefreshing() {
 		return this.mIsRefreshing;
+	}
+
+	public boolean isFinishRollbackInProgress() {
+		return this.mIsFinishRollbackInProgress;
+	}
+
+	public boolean isFinishRollbackInDragging() {
+		return this.mIsFinishRollbackInDragging;
 	}
 
 	private void performRefreshing(boolean refreshing, boolean notifying) {

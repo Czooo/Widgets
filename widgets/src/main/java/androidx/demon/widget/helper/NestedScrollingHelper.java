@@ -34,9 +34,13 @@ public interface NestedScrollingHelper extends NestedScrollingParent, NestedScro
 
 	boolean isNestedScrollInProgress();
 
+	boolean startNestedScroll();
+
 	void addOnScrollListener(@NonNull OnScrollListener listener);
 
 	void removeOnScrollListener(@NonNull OnScrollListener listener);
+
+	void setNestedScrollingStep(@NonNull NestedScrollingStep step);
 
 	void setScrollingDuration(int duration);
 
@@ -61,6 +65,9 @@ public interface NestedScrollingHelper extends NestedScrollingParent, NestedScro
 	int getScrollOffsetX();
 
 	int getScrollOffsetY();
+
+	@NonNull
+	Callback getCallback();
 
 	interface Callback {
 

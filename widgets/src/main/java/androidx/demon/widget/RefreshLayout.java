@@ -11,6 +11,10 @@ import android.view.ViewGroup;
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.widget.NestedScrollView;
+import androidx.demon.widget.helper.NestedScrollingHelper;
+import androidx.demon.widget.helper.NestedScrollingStep;
+import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * Author create by ok on 2019-09-04
@@ -155,8 +159,20 @@ public class RefreshLayout extends DragRelativeLayout {
 		return this.getDragManager().getRefreshMode();
 	}
 
+	public boolean isNotifying() {
+		return this.getDragManager().isNotifying();
+	}
+
 	public boolean isRefreshing() {
 		return this.getDragManager().isRefreshing();
+	}
+
+	public boolean isFinishRollbackInProgress() {
+		return this.getDragManager().isFinishRollbackInProgress();
+	}
+
+	public boolean isFinishRollbackInDragging() {
+		return this.getDragManager().isFinishRollbackInDragging();
 	}
 
 	public View getRefreshView() {
@@ -217,6 +233,72 @@ public class RefreshLayout extends DragRelativeLayout {
 		@NonNull
 		public final View getContentView() {
 			return this.mContentView;
+		}
+	}
+
+	public static class SimpleNestedScrollingStep extends NestedScrollingStep {
+
+		protected final int[] mConsumed = new int[2];
+		// parent scroll consumed
+		protected final int[] mParentScrollConsumed = new int[2];
+
+		@Override
+		public void onNestedPreScroll(int dx, int dy, @NonNull int[] consumed, @Nullable int[] offsetInWindow) {
+			this.dispatchParentScrollStep(dx, dy, consumed, offsetInWindow);
+		}
+
+		@Override
+		public void onNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, @Nullable int[] offsetInWindow) {
+			this.dispatchChildScrollStep(dxUnconsumed, dyUnconsumed, this.mConsumed, offsetInWindow);
+		}
+
+		@NonNull
+		@Override
+		public final RefreshLayout getAnchorView() {
+			return (RefreshLayout) super.getAnchorView();
+		}
+
+		protected void dispatchParentScrollStep(int dx, int dy, @NonNull int[] consumed, @Nullable int[] offsetInWindow) {
+			int unconsumedX = dx;
+			int unconsumedY = dy;
+			final NestedScrollingHelper nestedScrollingHelper = this.getNestedScrollingHelper();
+			nestedScrollingHelper.startNestedScroll();
+			nestedScrollingHelper.dispatchNestedPreScroll(unconsumedX, unconsumedY,
+					consumed, this.mParentScrollConsumed);
+			unconsumedX -= consumed[0];
+			unconsumedY -= consumed[1];
+			if (offsetInWindow != null) {
+				offsetInWindow[0] += this.mParentScrollConsumed[0];
+				offsetInWindow[1] += this.mParentScrollConsumed[1];
+			}
+			nestedScrollingHelper.dispatchNestedScroll(consumed[0], consumed[1],
+					unconsumedX, unconsumedY, this.mParentScrollConsumed);
+			if (offsetInWindow != null) {
+				offsetInWindow[0] += this.mParentScrollConsumed[0];
+				offsetInWindow[1] += this.mParentScrollConsumed[1];
+			}
+		}
+
+		protected void dispatchChildScrollStep(int dx, int dy, @NonNull int[] consumed, @Nullable int[] offsetInWindow) {
+			if (offsetInWindow != null) {
+				offsetInWindow[0] = 0;
+				offsetInWindow[1] = 0;
+			}
+			consumed[0] = 0;
+			consumed[1] = 0;
+			final RefreshLayout refreshLayout = this.getAnchorView();
+			final View refreshView = refreshLayout.getRefreshView();
+			// default NestedScrollView / RecyclerView
+			final boolean hasScrollStep = this.getNestedScrollingHelper().getScrollOffset() == 0
+					&& ((refreshView instanceof NestedScrollView)
+					|| (refreshView instanceof RecyclerView));
+			if (hasScrollStep) {
+				if (this.canScrollHorizontally()) {
+					refreshView.scrollBy(dx, 0);
+				} else if (this.canScrollVertically()) {
+					refreshView.scrollBy(0, dy);
+				}
+			}
 		}
 	}
 }

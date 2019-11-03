@@ -26,6 +26,7 @@ import androidx.core.view.NestedScrollingParent;
 import androidx.customview.view.AbsSavedState;
 import androidx.demon.widget.helper.NestedScrollingHelper;
 import androidx.demon.widget.helper.NestedScrollingHelperImpl;
+import androidx.demon.widget.helper.NestedScrollingStep;
 
 /**
  * Author create by ok on 2019-09-04
@@ -342,6 +343,10 @@ public class DragRelativeLayout extends RelativeLayout implements NestedScrollin
 		if (this.mOnScrollListeners != null) {
 			this.mOnScrollListeners.remove(listener);
 		}
+	}
+
+	public void setNestedScrollingStep(@NonNull NestedScrollingStep step) {
+		this.getNestedScrollingHelper().setNestedScrollingStep(step);
 	}
 
 	public boolean isDraggingToStart() {

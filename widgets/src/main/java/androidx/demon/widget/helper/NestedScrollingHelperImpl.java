@@ -80,6 +80,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	private int mActivePointerId = INVALID_POINTER;
 	private int mScrollState = SCROLL_STATE_IDLE;
 
+	private NestedScrollingStep mNestedScrollingStep;
 	private final int[] mScrollConsumed = new int[2];
 	private final int[] mScrollOffsetCount = new int[2];
 	private final int[] mScrollOffset = new int[2];
@@ -125,11 +126,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 					this.mIsBeingDragged = true;
 					this.mViewScroller.stopScrollInternal();
 					this.setScrollState(SCROLL_STATE_DRAGGING);
-				}
-				if (this.mCallback.canScrollHorizontally()) {
-					this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
-				} else if (this.mCallback.canScrollVertically()) {
-					this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
 				}
 				break;
 			case MotionEvent.ACTION_MOVE:
@@ -217,12 +213,6 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				// Remember where the motion event started
 				this.mLastTouchMotionX = this.mInitialMotionX = event.getX(mPointerIndex);
 				this.mLastTouchMotionY = this.mInitialMotionY = event.getY(mPointerIndex);
-
-				if (this.mCallback.canScrollHorizontally()) {
-					this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
-				} else if (this.mCallback.canScrollVertically()) {
-					this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
-				}
 				break;
 			case MotionEvent.ACTION_MOVE:
 				mPointerIndex = event.findPointerIndex(this.mActivePointerId);
@@ -258,7 +248,8 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				if (!this.mIsBeingDragged) {
 					return false;
 				}
-				if (this.dispatchNestedPreScroll(dx, dy, this.mScrollConsumed, this.mScrollOffset)) {
+				if (this.mNestedScrollingStep != null && this.mNestedScrollingStep
+						.dispatchNestedPreScroll(dx, dy, this.mScrollConsumed, this.mScrollOffset)) {
 					dx -= this.mScrollConsumed[0];
 					dy -= this.mScrollConsumed[1];
 				}
@@ -269,7 +260,8 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 					// Scroll to follow the motion event
 					this.scrollByInternal(dx, dy, this.consumed, this.unconsumed);
 					// Update the last touch co-ords, taking any scroll offset into account
-					if (this.dispatchNestedScroll(this.consumed[0], this.consumed[1], this.unconsumed[0], this.unconsumed[1], this.mScrollOffset)) {
+					if (this.mNestedScrollingStep != null && this.mNestedScrollingStep
+							.dispatchNestedScroll(this.consumed[0], this.consumed[1], this.unconsumed[0], this.unconsumed[1], this.mScrollOffset)) {
 						this.mLastTouchMotionX -= this.mScrollOffset[0];
 						this.mLastTouchMotionY -= this.mScrollOffset[1];
 					}
@@ -468,6 +460,15 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	}
 
 	@Override
+	public void setNestedScrollingStep(@NonNull NestedScrollingStep step) {
+		if (this.mNestedScrollingStep != null) {
+			this.mNestedScrollingStep.setNestedScrollingHelper(null, null);
+		}
+		this.mNestedScrollingStep = step;
+		this.mNestedScrollingStep.setNestedScrollingHelper(this, this.mAnchorView);
+	}
+
+	@Override
 	public void setScrollingDuration(int duration) {
 		this.mScrollingDuration = duration;
 	}
@@ -543,8 +544,16 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 		return this.mScrollOffsetCount[1];
 	}
 
+	@NonNull
+	@Override
+	public Callback getCallback() {
+		return this.mCallback;
+	}
+
 	protected boolean fling(float velocityX, float velocityY) {
-//		return this.mViewScroller.fling(velocityX, velocityY);
+//		if (this.mIsBeingDragged) {
+//			return this.mViewScroller.fling(velocityX, velocityY);
+//		}
 		return false;
 	}
 
@@ -614,6 +623,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 				int unconsumedY = (currY - this.mOldScrollY);
 				this.mOldScrollX = currX;
 				this.mOldScrollY = currY;
+
 				// rollback scrolling
 				NestedScrollingHelperImpl.this.scrollByInternal(unconsumedX, unconsumedY, this.consumed, this.unconsumed);
 
@@ -928,11 +938,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	@Override
 	public void onNestedScroll(@NonNull View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
 		if (!this.hasNestedScrollingParent()) {
-			if (this.mCallback.canScrollHorizontally()) {
-				this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
-			} else if (this.mCallback.canScrollVertically()) {
-				this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
-			}
+			this.startNestedScroll();
 		}
 		this.dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, this.mParentOffsetInWindow);
 		if (DEBUG) {
@@ -1031,11 +1037,7 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 			Log.e(TAG, "onNestedPreScroll Before" + (dy - consumed[1] + " , " + this.mParentScrollConsumed[1]) + " , " + this.mNestedScrollInProgress);
 		}
 		if (!this.hasNestedScrollingParent()) {
-			if (this.mCallback.canScrollHorizontally()) {
-				this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
-			} else if (this.mCallback.canScrollVertically()) {
-				this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
-			}
+			this.startNestedScroll();
 		}
 		final int[] parentConsumed = this.mParentScrollConsumed;
 		if (this.dispatchNestedPreScroll(dx - consumed[0], dy - consumed[1], parentConsumed, null)) {
@@ -1103,8 +1105,8 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 */
 	@Override
 	public boolean onNestedPreFling(@NonNull View target, float velocityX, float velocityY) {
-		final int dxConsumed = this.getScrollOffsetX();
-		final int dyConsumed = this.getScrollOffsetY();
+//		final int dxConsumed = this.getScrollOffsetX();
+//		final int dyConsumed = this.getScrollOffsetY();
 
 		int consumedX = 0;
 		int consumedY = 0;
@@ -1169,6 +1171,16 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	@Override
 	public boolean isNestedScrollingEnabled() {
 		return this.mNestedScrollingChildHelper.isNestedScrollingEnabled();
+	}
+
+	@Override
+	public boolean startNestedScroll() {
+		if (this.mCallback.canScrollHorizontally()) {
+			return this.startNestedScroll(ViewCompat.SCROLL_AXIS_HORIZONTAL);
+		} else if (this.mCallback.canScrollVertically()) {
+			return this.startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
+		}
+		return this.startNestedScroll(ViewCompat.SCROLL_AXIS_NONE);
 	}
 
 	/**
@@ -1278,6 +1290,9 @@ public class NestedScrollingHelperImpl implements NestedScrollingHelper {
 	 */
 	@Override
 	public void stopNestedScroll(int type) {
+		if (this.mNestedScrollingStep != null) {
+			this.mNestedScrollingStep.stopNestedScroll();
+		}
 		this.mNestedScrollingChildHelper.stopNestedScroll(type);
 	}
 

@@ -27,7 +27,6 @@ import androidx.appcompat.widget.AppCompatImageView;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.view.ViewCompat;
 import androidx.demon.widget.BannerLayout;
-import androidx.demon.widget.DragRelativeLayout;
 import androidx.demon.widget.NineGridView;
 import androidx.demon.widget.RefreshLayout;
 import androidx.demon.widget.RefreshMode;
@@ -318,43 +317,26 @@ public class CoordinatorLayoutActivity extends AppCompatActivity {
 		}
 	}
 
-	public static class  aaa extends AppBarLayout.ScrollingViewBehavior implements AppBarLayout.OnOffsetChangedListener {
+	public static class ScrollingViewBehavior extends AppBarLayout.ScrollingViewBehavior implements AppBarLayout.OnOffsetChangedListener {
 
-		public aaa() {
+		public ScrollingViewBehavior() {
 			super();
 		}
 
-		public aaa(Context context, AttributeSet attrs) {
+		public ScrollingViewBehavior(Context context, AttributeSet attrs) {
 			super(context, attrs);
 		}
 
 		private AppBarLayout mAppBarLayout;
+
 		@Override
 		public boolean layoutDependsOn(CoordinatorLayout parent, View child, View dependency) {
-			if(dependency instanceof AppBarLayout) {
+			if (dependency instanceof AppBarLayout) {
 				mAppBarLayout = (AppBarLayout) dependency;
 				mAppBarLayout.addOnOffsetChangedListener(this);
 			}
-			if(child instanceof RefreshLayout) {
-				((RefreshLayout) child).setOnChildScrollCallback(new DragRelativeLayout.OnChildScrollCallback() {
-					@Override
-					public boolean canChildScroll(@NonNull ViewGroup container, int direction) {
-						final RefreshLayout refreshLayout = (RefreshLayout) container;
-						final View dragView = refreshLayout.getDragManager().getDragView();
-						if (dragView != null) {
-							if (RefreshLayout.HORIZONTAL == refreshLayout.getOrientation()) {
-								return dragView.canScrollHorizontally(direction);
-							} else if (RefreshLayout.VERTICAL == refreshLayout.getOrientation()) {
-								final boolean canScrollVertically = dragView.canScrollVertically(direction);
-								if (direction < 0) {
-									return canScrollVertically || offset < 0;
-								}
-								return canScrollVertically;
-							}
-						}
-						return true;
-					}
-				});
+			if (child instanceof RefreshLayout) {
+				((RefreshLayout) child).setNestedScrollingStep(new CooNestedScrollingStep());
 			}
 			return super.layoutDependsOn(parent, child, dependency);
 		}
@@ -377,10 +359,46 @@ public class CoordinatorLayoutActivity extends AppCompatActivity {
 			Log.e("Coo", dy + " === ");
 		}
 
-		int offset = 0;
+		private int mScrollOffset = 0;
+
 		@Override
 		public void onOffsetChanged(AppBarLayout appBarLayout, int offset) {
-			this.offset = offset;
+			this.mScrollOffset = offset;
+		}
+
+		public class CooNestedScrollingStep extends RefreshLayout.SimpleNestedScrollingStep {
+
+			@Override
+			public void onNestedPreScroll(int dx, int dy, @NonNull int[] consumed, @Nullable int[] offsetInWindow) {
+				final ScrollingViewBehavior scrollingViewBehavior = ScrollingViewBehavior.this;
+				final int absScrollOffset = Math.abs(scrollingViewBehavior.mScrollOffset);
+				final int totalScrollRange = scrollingViewBehavior.mAppBarLayout
+						.getTotalScrollRange();
+
+				if (dy < 0 && absScrollOffset <= totalScrollRange
+						&& !this.canChildScroll(dy)) {
+					this.dispatchParentScrollStep(dx, dy, consumed, offsetInWindow);
+
+					if (absScrollOffset > 0) {
+						consumed[0] = dx;
+						consumed[1] = dy;
+					}
+				}
+			}
+
+			@Override
+			public void onNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, @Nullable int[] offsetInWindow) {
+				final ScrollingViewBehavior scrollingViewBehavior = ScrollingViewBehavior.this;
+				final int absScrollOffset = Math.abs(scrollingViewBehavior.mScrollOffset);
+				final int totalScrollRange = scrollingViewBehavior.mAppBarLayout
+						.getTotalScrollRange();
+
+				if (dyUnconsumed > 0 && absScrollOffset < totalScrollRange) {
+					this.dispatchParentScrollStep(dxUnconsumed, dyUnconsumed, this.mConsumed, offsetInWindow);
+					return;
+				}
+				super.onNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, offsetInWindow);
+			}
 		}
 	}
 }
